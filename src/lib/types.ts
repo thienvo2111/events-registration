@@ -31,18 +31,18 @@ export interface Unit {
 export interface Activity {
   id: string;
   title: string;
-  description?: string;
-  price_member: number;
-  price_non_member: number;
-  max_participants?: number;
-  current_participants: number;
-  status: 'active' | 'inactive' | 'cancelled';
-  start_date?: string;
-  end_date?: string;
-  location?: string;
+  description?: string | null;
+  price_member: number | null;
+  price_non_member: number | null;
+  max_participants?: number | null;
+  current_participants?: number | null;
+  status?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  location?: string | null;
   image_url?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string | null;
 }
 
 export interface ActivityStats {
@@ -124,9 +124,10 @@ export interface PaymentHistory {
 
 export interface CartItem {
   activityId: string;
-  activity?: Activity;
+  title: string;
   quantity: number;
-  pricePerUnit: number;
+  unitPrice: number;
+  pricingType: PricingType;
 }
 
 export interface CartState {
@@ -202,26 +203,25 @@ export interface OrderSearchResult {
   created_at: string;
   item_count: number;
   items?: {
-    activity_title: string
-    quantity: number
-    price_per_unit: number
-  }[]
+    activity_title: string;
+    quantity: number;
+    price_per_unit: number;
+  }[];
   attendees?: Attendee[];
-
 }
 
 // ============================================================================
 // API RESPONSES
 // ============================================================================
 
-export interface ApiResponse<T> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
 }
 
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<T = unknown> {
   data: T[];
   total: number;
   page: number;
@@ -259,13 +259,4 @@ export interface PublicAttendee {
   created_at: string;
 }
 
-export type PricingType = "member" | "non_member"
-
-export interface CartItem {
-  activityId: string
-  title: string
-  quantity: number
-  unitPrice: number        // GIỮ field này
-  pricingType: PricingType
-  // XÓA hoàn toàn mọi khai báo pricePerUnit nếu còn
-}
+export type PricingType = 'member' | 'non_member';
