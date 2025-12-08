@@ -1,65 +1,127 @@
-import Image from "next/image";
+// ============================================================================
+// app/page.tsx - Landing Page (Trang chủ)
+// ============================================================================
 
-export default function Home() {
+'use client';
+
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ShoppingCart, Search, CheckCircle } from 'lucide-react';
+
+export default function LandingPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="text-2xl font-bold text-blue-600">📋 Event Registration</div>
+          <nav className="flex gap-4">
+            <Link href="/events">
+              <Button variant="ghost">Duyệt hoạt động</Button>
+            </Link>
+            <Link href="/search">
+              <Button variant="outline">Tra cứu đơn hàng</Button>
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section className="max-w-7xl mx-auto px-4 py-16 text-center">
+        <h1 className="text-5xl font-bold mb-6 text-gray-900">
+          Đăng ký sự kiện dễ dàng
+        </h1>
+        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+          Không cần tạo tài khoản. Chỉ cần nhập thông tin và lựa chọn hoạt động.
+          Tra cứu đơn hàng bằng mã đơn hoặc số điện thoại.
+        </p>
+        <div className="flex gap-4 justify-center">
+          <Link href="/events">
+            <Button size="lg" className="gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Đặt sự kiện ngay
+            </Button>
+          </Link>
+          <Link href="/search">
+            <Button size="lg" variant="outline" className="gap-2">
+              <Search className="h-5 w-5" />
+              Tra cứu đơn hàng
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid md:grid-cols-3 gap-8">
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">✨</div>
+            <h3 className="text-xl font-bold mb-2">Không cần đăng ký</h3>
+            <p className="text-gray-600">
+              Nhập thông tin trực tiếp, không phải tạo tài khoản phức tạp
+            </p>
+          </Card>
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">🛒</div>
+            <h3 className="text-xl font-bold mb-2">Chọn hoạt động dễ dàng</h3>
+            <p className="text-gray-600">
+              Duyệt tất cả sự kiện có sẵn, so sánh và chọn những cái bạn thích
+            </p>
+          </Card>
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">💳</div>
+            <h3 className="text-xl font-bold mb-2">Thanh toán qua QR</h3>
+            <p className="text-gray-600">
+              Nhận mã QR chuyển khoản ngay lập tức, không phí xử lý
+            </p>
+          </Card>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="bg-blue-50 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-3xl font-bold mb-12 text-center">Quy trình đăng ký</h2>
+          <div className="grid md:grid-cols-4 gap-4">
+            {[
+              { num: 1, title: 'Chọn hoạt động', desc: 'Duyệt danh sách sự kiện' },
+              { num: 2, title: 'Thêm vào giỏ', desc: 'Chọn số lượng, thêm vào giỏ' },
+              { num: 3, title: 'Nhập thông tin', desc: 'Nhập họ tên, SĐT, đơn vị' },
+              { num: 4, title: 'Thanh toán', desc: 'Quét QR, chuyển khoản xong' },
+            ].map((step) => (
+              <Card key={step.num} className="p-6 text-center">
+                <div className="text-3xl font-bold text-blue-600 mb-2">
+                  {step.num}
+                </div>
+                <h3 className="font-bold mb-2">{step.title}</h3>
+                <p className="text-sm text-gray-600">{step.desc}</p>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="max-w-7xl mx-auto px-4 py-12 text-center">
+        <h2 className="text-3xl font-bold mb-6">Sẵn sàng chưa?</h2>
+        <Link href="/events">
+          <Button size="lg" className="gap-2">
+            Bắt đầu đăng ký
+            <CheckCircle className="h-5 w-5" />
+          </Button>
+        </Link>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-8">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="mb-4">📋 Hệ thống đăng ký sự kiện</p>
+          <p className="text-gray-400 text-sm">
+            © 2024. Không yêu cầu tài khoản. Tra cứu dễ dàng bằng mã đơn hoặc SĐT.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
   );
 }
