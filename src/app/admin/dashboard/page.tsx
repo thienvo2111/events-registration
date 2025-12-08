@@ -1,189 +1,129 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClient } from "@supabase/supabase-js"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { formatVND } from "@/lib/format"
 import { createSupabaseClient } from "@/utils/supabase/client"
-
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-type DashboardOrder = {
-  id: string
-  order_code: string
-  total_amount: number
-  payment_status: string
-  created_at: string
-  registration: {
-    full_name: string
-  } | null
-}
-
-type DashboardMetrics = {
-  totalOrders: number
-  totalRevenue: number
-  pendingPayments: number
-  totalActivities: number
-  totalAttendees: number
-  recentOrders: DashboardOrder[]
-}
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatVND } from "@/lib/format"
+import type { DashboardOrder, DashboardMetrics } from "@/lib/types"
 
 export default function AdminDashboardPage() {
+  const supabase = createSupabaseClient()
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-
-        // Orders + registration
-        const { data: orders, error: ordersError } = await supabase
-          .from("orders")
-          .select(
-            `
-            id,
-            order_code,
-            total_amount,
-            payment_status,
-            created_at,
-            registration:registrations (
-              full_name
-            )
-          `
-          )
-          .order("created_at", { ascending: false })
-
-        if (ordersError) throw ordersError
-
-        // Activities count
-        const { data: activities, error: activitiesError } = await supabase
-          .from("activities")
-          .select("id")
-
-        if (activitiesError) throw activitiesError
-
-        // Attendees count
-        const { data: attendees, error: attendeesError } = await supabase
-          .from("attendees")
-          .select("id")
-
-        if (attendeesError) throw attendeesError
-
-        const totalOrders = orders?.length ?? 0
-        const totalRevenue =
-          orders?.reduce(
-            (sum, o) => sum + (typeof o.total_amount === "number" ? o.total_amount : 0),
-            0
-          ) ?? 0
-        const pendingPayments =
-          orders?.filter((o) => o.payment_status === "pending").length ?? 0
-
-        const recentOrders = (orders ?? []).slice(0, 5) as DashboardOrder[]
-
-        setMetrics({
-          totalOrders,
-          totalRevenue,
-          pendingPayments,
-          totalActivities: activities?.length ?? 0,
-          totalAttendees: attendees?.length ?? 0,
-          recentOrders,
-        })
-      } catch (err) {
-        console.error(err)
-        setError(err instanceof Error ? err.message : "Không thể tải dữ liệu")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchMetrics()
+    loadDashboard()
   }, [])
 
-  if (loading) {
-    return <div className="text-center text-sm text-slate-500">Đang tải...</div>
+  async function loadDashboard() {
+    try {
+      setLoading(true)
+
+      // Fetch orders with registrations
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select(
+          `
+          id,
+          order_code,
+          total_amount,
+          payment_status,
+          created_at,
+          registration:registrations(full_name)
+        `
+        )
+        .order("created_at", { ascending: false })
+
+      if (ordersError) throw ordersError
+
+      const totalOrders = orders?.length ?? 0
+      const pendingOrders =
+        orders?.filter((o: any) => o.payment_status === "pending")?.length ?? 0
+
+      // FIX: Map orders to DashboardOrder[] with proper type
+      const recentOrders: DashboardOrder[] = (orders ?? [])
+        .slice(0, 5)
+        .map((order: any) => ({
+          id: order.id,
+          order_code: order.order_code,
+          total_amount: order.total_amount,
+          payment_status: order.payment_status,
+          created_at: order.created_at,
+          registration: Array.isArray(order.registration)
+            ? order.registration[0] ?? null
+            : order.registration,
+        }))
+
+      setMetrics({
+        totalOrders,
+        pendingOrders,
+        recentOrders,
+      })
+    } catch (error) {
+      console.error("Failed to load dashboard:", error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (error || !metrics) {
-    return (
-      <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-        Lỗi: {error ?? "Không thể tải dữ liệu"}
-      </div>
-    )
-  }
+  if (loading) return <div>Đang tải...</div>
 
   return (
-    <div className="space-y-8">
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-semibold text-slate-900">Dashboard</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Thống kê tổng quan về đặt hàng và tham gia hoạt động.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Dashboard Quản Lý</h1>
+      <p className="text-gray-600">
+        Thống kê tổng quan về đặt hàng và tham gia hoạt động.
+      </p>
 
-      {/* Metrics */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        <MetricCard label="Tổng đơn hàng" value={metrics.totalOrders.toString()} icon="📦" />
-        <MetricCard label="Doanh thu" value={formatVND(metrics.totalRevenue)} icon="💰" />
-        <MetricCard
-          label="Đơn chờ thanh toán"
-          value={metrics.pendingPayments.toString()}
-          icon="⏳"
-        />
-        <MetricCard
-          label="Số hoạt động"
-          value={metrics.totalActivities.toString()}
-          icon="🎯"
-        />
-        <MetricCard
-          label="Người tham gia"
-          value={metrics.totalAttendees.toString()}
-          icon="👥"
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard label="Tổng đơn hàng" value={metrics?.totalOrders ?? 0} />
+        <StatCard label="Đơn chờ thanh toán" value={metrics?.pendingOrders ?? 0} />
+        <StatCard
+          label="Đơn hoàn thành"
+          value={(metrics?.totalOrders ?? 0) - (metrics?.pendingOrders ?? 0)}
         />
       </div>
 
-      {/* Recent orders */}
       <Card>
         <CardHeader>
           <CardTitle>Đơn hàng gần đây</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          {metrics.recentOrders.length === 0 ? (
-            <p className="text-sm text-slate-500">Chưa có đơn hàng nào.</p>
+        <CardContent>
+          {!metrics?.recentOrders || metrics.recentOrders.length === 0 ? (
+            <p className="text-gray-500">Chưa có đơn hàng nào.</p>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-xs text-slate-500">
-                <tr>
-                  <th className="px-4 py-2 text-left font-medium">Mã đơn</th>
-                  <th className="px-4 py-2 text-left font-medium">Người đặt</th>
-                  <th className="px-4 py-2 text-left font-medium">Tổng tiền</th>
-                  <th className="px-4 py-2 text-left font-medium">Trạng thái</th>
-                  <th className="px-4 py-2 text-left font-medium">Ngày tạo</th>
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Mã đơn</th>
+                  <th className="text-left py-2">Người đặt</th>
+                  <th className="text-right py-2">Tổng tiền</th>
+                  <th className="text-center py-2">Trạng thái</th>
+                  <th className="text-left py-2">Ngày tạo</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody>
                 {metrics.recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-2 font-mono text-xs font-semibold text-slate-900">
-                      {order.order_code}
-                    </td>
-                    <td className="px-4 py-2 text-slate-700">
-                      {order.registration?.full_name ?? "—"}
-                    </td>
-                    <td className="px-4 py-2 font-semibold text-slate-900">
+                  <tr key={order.id} className="border-b hover:bg-gray-50">
+                    <td className="py-2">{order.order_code}</td>
+                    <td className="py-2">{order.registration?.full_name ?? "—"}</td>
+                    <td className="py-2 text-right">
                       {formatVND(order.total_amount || 0)}
                     </td>
-                    <td className="px-4 py-2">
-                      <StatusBadge status={order.payment_status} />
+                    <td className="py-2 text-center">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                          order.payment_status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {order.payment_status === "completed"
+                          ? "Hoàn thành"
+                          : "Chờ"}
+                      </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-slate-500">
+                    <td className="py-2">
                       {new Date(order.created_at).toLocaleString("vi-VN")}
                     </td>
                   </tr>
@@ -197,54 +137,13 @@ export default function AdminDashboardPage() {
   )
 }
 
-function MetricCard(props: { label: string; value: string; icon?: string }) {
+function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-            {props.label}
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{props.value}</p>
-        </div>
-        {props.icon && <span className="text-2xl">{props.icon}</span>}
-      </div>
+    <Card>
+      <CardContent className="pt-6">
+        <p className="text-gray-600 text-sm mb-2">{label}</p>
+        <p className="text-3xl font-bold">{value}</p>
+      </CardContent>
     </Card>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<
-    string,
-    { label: string; className: string }
-  > = {
-    pending: {
-      label: "Chờ thanh toán",
-      className: "bg-amber-50 text-amber-700 ring-amber-100",
-    },
-    completed: {
-      label: "Hoàn tất",
-      className: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    },
-    failed: {
-      label: "Thất bại",
-      className: "bg-red-50 text-red-700 ring-red-100",
-    },
-  }
-
-  const cfg = map[status] ?? {
-    label: status,
-    className: "bg-slate-50 text-slate-700 ring-slate-100",
-  }
-
-  return (
-    <span
-      className={[
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ring-1",
-        cfg.className,
-      ].join(" ")}
-    >
-      {cfg.label}
-    </span>
   )
 }

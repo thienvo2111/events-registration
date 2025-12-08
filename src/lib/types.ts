@@ -119,6 +119,27 @@ export interface PaymentHistory {
 }
 
 // ============================================================================
+// DASHBOARD TYPES
+// ============================================================================
+
+export interface DashboardOrder {
+  id: string;
+  order_code: string;
+  total_amount: number;
+  payment_status: 'pending' | 'completed' | 'cancelled';
+  created_at: string;
+  registration?: {
+    full_name: string;
+  } | null;
+}
+
+export interface DashboardMetrics {
+  totalOrders: number;
+  pendingOrders: number;
+  recentOrders: DashboardOrder[];
+}
+
+// ============================================================================
 // CART & CHECKOUT
 // ============================================================================
 

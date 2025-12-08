@@ -1,7 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useReducer } from "react"
-import type { CartItem, CartState } from "@/lib/types"
+import type { CartItem, CartState, PricingType } from "@/lib/types"
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
@@ -14,8 +14,6 @@ type CartAction =
       type: "REMOVE_ITEM"
       payload: { activityId: string; pricingType: PricingType }
     }
-
-
 
 const initialState: CartState = {
   items: [],
@@ -32,7 +30,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const existing = state.items.find(
         (i) =>
           i.activityId === item.activityId &&
-          i.pricingType === item.pricingType,
+          i.pricingType === item.pricingType
       )
 
       if (existing) {
@@ -43,7 +41,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
             i.activityId === item.activityId &&
             i.pricingType === item.pricingType
               ? { ...i, quantity: i.quantity + diff }
-              : i,
+              : i
           ),
           totalAmount: state.totalAmount + item.unitPrice * diff,
           totalItems: state.totalItems + diff,
@@ -62,43 +60,45 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return initialState
 
     case "UPDATE_QUANTITY": {
-        const { activityId, pricingType, quantity } = action.payload
-        if (quantity < 1) return state
+      const { activityId, pricingType, quantity } = action.payload
+      if (quantity < 1) return state
 
-        const existing = state.items.find(
-            (i) => i.activityId === activityId && i.pricingType === pricingType,
-        )
-        if (!existing) return state
+      const existing = state.items.find(
+        (i) => i.activityId === activityId && i.pricingType === pricingType
+      )
 
-        const diff = quantity - existing.quantity
+      if (!existing) return state
 
-        return {
-            ...state,
-            items: state.items.map((i) =>
-            i.activityId === activityId && i.pricingType === pricingType
-                ? { ...i, quantity }
-                : i,
-            ),
-            totalAmount: state.totalAmount + existing.unitPrice * diff,
-            totalItems: state.totalItems + diff,
-        }
+      const diff = quantity - existing.quantity
+
+      return {
+        ...state,
+        items: state.items.map((i) =>
+          i.activityId === activityId && i.pricingType === pricingType
+            ? { ...i, quantity }
+            : i
+        ),
+        totalAmount: state.totalAmount + existing.unitPrice * diff,
+        totalItems: state.totalItems + diff,
+      }
     }
 
     case "REMOVE_ITEM": {
-        const { activityId, pricingType } = action.payload
-        const item = state.items.find(
-            (i) => i.activityId === activityId && i.pricingType === pricingType,
-        )
-        if (!item) return state
+      const { activityId, pricingType } = action.payload
+      const item = state.items.find(
+        (i) => i.activityId === activityId && i.pricingType === pricingType
+      )
 
-        return {
-            ...state,
-            items: state.items.filter(
-            (i) => !(i.activityId === activityId && i.pricingType === pricingType),
-            ),
-            totalAmount: state.totalAmount - item.unitPrice * item.quantity,
-            totalItems: state.totalItems - item.quantity,
-        }
+      if (!item) return state
+
+      return {
+        ...state,
+        items: state.items.filter(
+          (i) => !(i.activityId === activityId && i.pricingType === pricingType)
+        ),
+        totalAmount: state.totalAmount - item.unitPrice * item.quantity,
+        totalItems: state.totalItems - item.quantity,
+      }
     }
 
     default:
@@ -113,13 +113,12 @@ interface CartContextValue {
   updateQuantity: (
     activityId: string,
     pricingType: PricingType,
-    quantity: number,
+    quantity: number
   ) => void
   removeItem: (activityId: string, pricingType: PricingType) => void
   showToast: (message: string) => void
   toastMessage: string | null
 }
-
 
 const CartContext = createContext<CartContextValue | null>(null)
 
@@ -132,31 +131,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToastMessage(null), 2500)
   }
 
-const value: CartContextValue = {
-  state,
-  addItem: (item) => dispatch({ type: "ADD_ITEM", payload: item }),
-  clearCart: () => dispatch({ type: "CLEAR_CART" }),
-  updateQuantity: (activityId, pricingType, quantity) =>
-    dispatch({ type: "UPDATE_QUANTITY", payload: { activityId, pricingType, quantity } }),
-  removeItem: (activityId, pricingType) =>
-    dispatch({ type: "REMOVE_ITEM", payload: { activityId, pricingType } }),
-  showToast,
-  toastMessage,
-}
-
+  const value: CartContextValue = {
+    state,
+    addItem: (item) => dispatch({ type: "ADD_ITEM", payload: item }),
+    clearCart: () => dispatch({ type: "CLEAR_CART" }),
+    updateQuantity: (activityId, pricingType, quantity) =>
+      dispatch({ type: "UPDATE_QUANTITY", payload: { activityId, pricingType, quantity } }),
+    removeItem: (activityId, pricingType) =>
+      dispatch({ type: "REMOVE_ITEM", payload: { activityId, pricingType } }),
+    showToast,
+    toastMessage,
+  }
 
   return (
     <CartContext.Provider value={value}>
       {children}
       {toastMessage && (
-        <div className="fixed right-4 top-4 z-50 rounded-md bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg">
           {toastMessage}
         </div>
       )}
     </CartContext.Provider>
   )
 }
-
 
 export function useCart() {
   const ctx = useContext(CartContext)

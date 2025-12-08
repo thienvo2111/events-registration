@@ -1,351 +1,257 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useEffect, useState } from "react"
+import { createSupabaseClient } from "@/utils/supabase/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { formatVND } from '@/lib/format'
+import { formatVND } from "@/lib/format"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
-interface OrderItem {
-  id: string
-  quantity: number
-  price_per_unit: number
-  subtotal: number
-  pricing_type: string | null
-  activity: { id: string; title: string } | null
-}
-
-interface Order {
+interface OrderDetail {
   id: string
   order_code: string
-  payment_status: string
+  payment_status: "pending" | "completed" | "cancelled"
   total_amount: number
   created_at: string
-  registration: {
+  registration?: {
     id: string
     full_name: string
     phone_number: string
-    email: string | null
-    unit: { name: string | null } | null
+    email?: string | null
+    unit?: {
+      name: string | null
+    } | null
   } | null
-  order_items: OrderItem[]
+  order_items?: Array<{
+    id: string
+    quantity: number
+    price_per_unit: number
+    subtotal: number
+    pricing_type?: string | null
+    activity?: {
+      title: string
+    } | null
+  }>
 }
 
 export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([])
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
+  const supabase = createSupabaseClient()
+  const [orders, setOrders] = useState<OrderDetail[]>([])
+  const [filteredOrders, setFilteredOrders] = useState<OrderDetail[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [searchQuery, setSearchQuery] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
-    fetchOrders()
+    loadOrders()
   }, [])
 
   useEffect(() => {
-    filterOrders()
-  }, [orders, searchQuery, filterStatus])
+    const filtered = orders.filter(
+      (order) =>
+        order.order_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.registration?.full_name
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase())
+    )
+    setFilteredOrders(filtered)
+  }, [searchQuery, orders])
 
-  const fetchOrders = async () => {
+  async function loadOrders() {
     try {
       setLoading(true)
+      setError("")
+
       const { data, error: err } = await supabase
-        .from('orders')
-        .select(`
+        .from("orders")
+        .select(
+          `
           id,
           order_code,
           payment_status,
           total_amount,
           created_at,
-          registration:registrations (
-            id,
-            full_name,
-            phone_number,
-            email,
-            unit:units ( name )
-          ),
-          order_items (
-            id,
-            quantity,
-            price_per_unit,
-            subtotal,
-            pricing_type,
-            activity:activities ( id, title )
-          )
-        `)
-        .order('created_at', { ascending: false })
+          registration:registrations(id, full_name, phone_number, email, unit:units(name)),
+          order_items(id, quantity, price_per_unit, subtotal, pricing_type, activity:activities(title))
+        `
+        )
+        .order("created_at", { ascending: false })
 
       if (err) throw err
-      setOrders(data || [])
+
+      // FIX: Map data to OrderDetail[] - handle array registration
+      const mappedOrders: OrderDetail[] = (data ?? []).map((order: any) => ({
+        id: order.id,
+        order_code: order.order_code,
+        payment_status: order.payment_status,
+        total_amount: order.total_amount,
+        created_at: order.created_at,
+        registration: Array.isArray(order.registration)
+          ? order.registration[0] ?? null
+          : order.registration,
+        order_items: Array.isArray(order.order_items)
+          ? order.order_items
+          : order.order_items
+          ? [order.order_items]
+          : [],
+      }))
+
+      setOrders(mappedOrders)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi tải dữ liệu')
+      setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu")
     } finally {
       setLoading(false)
     }
   }
 
-  const filterOrders = () => {
-    let filtered = orders
+  async function confirmPayment(orderId: string) {
+    try {
+      const { error: err } = await supabase
+        .from("orders")
+        .update({ payment_status: "completed" })
+        .eq("id", orderId)
 
-    // Filter by status
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter((o) => o.payment_status === filterStatus)
-    }
+      if (err) throw err
 
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (o) =>
-          o.order_code.toLowerCase().includes(query) ||
-          o.registration?.full_name.toLowerCase().includes(query) ||
-          o.registration?.phone_number.includes(query)
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId ? { ...o, payment_status: "completed" } : o
+        )
       )
-    }
-
-    setFilteredOrders(filtered)
-  }
-
-  const handleConfirmPayment = async (orderId: string) => {
-    if (!confirm('Xác nhận đơn hàng này đã thanh toán?')) return
-
-    try {
-      const { error: err } = await supabase
-        .from('orders')
-        .update({ payment_status: 'completed' })
-        .eq('id', orderId)
-
-      if (err) throw err
-      await fetchOrders()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi cập nhật đơn hàng')
+      setError(err instanceof Error ? err.message : "Lỗi cập nhật trạng thái")
     }
   }
 
-  const handleMarkFailed = async (orderId: string) => {
-    if (!confirm('Đánh dấu đơn hàng này là thất bại?')) return
-
-    try {
-      const { error: err } = await supabase
-        .from('orders')
-        .update({ payment_status: 'failed' })
-        .eq('id', orderId)
-
-      if (err) throw err
-      await fetchOrders()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Lỗi cập nhật đơn hàng')
-    }
-  }
-
-  if (loading) {
-    return <div className="text-center text-slate-600">Đang tải...</div>
-  }
+  if (loading) return <div className="p-4">Đang tải...</div>
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-4">
       <div>
-        <h1 className="text-3xl font-semibold text-slate-900">
-          Quản lý đơn hàng
-        </h1>
-        <p className="mt-2 text-slate-600">
+        <h1 className="text-3xl font-bold">Quản lý đơn hàng</h1>
+        <p className="text-gray-600">
           Xem, tìm kiếm và xác nhận thanh toán cho các đơn hàng
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
-          {error}
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          Lỗi: {error}
         </div>
       )}
 
-      {/* Filters */}
-      <Card className="p-6">
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-          <div>
-            <label className="form-label">Tìm kiếm</label>
-            <Input
-              placeholder="Mã đơn, tên, SĐT..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="form-label">Trạng thái</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="form-control"
-            >
-              <option value="all">Tất cả</option>
-              <option value="pending">Chờ thanh toán</option>
-              <option value="completed">Hoàn tất</option>
-              <option value="failed">Thất bại</option>
-            </select>
-          </div>
-        </div>
-      </Card>
+      <div>
+        <Input
+          placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="max-w-md"
+        />
+      </div>
 
-      {/* Orders List */}
-      <div className="space-y-4">
-        {filteredOrders.length === 0 ? (
-          <Card className="p-6 text-center text-slate-600">
-            Không tìm thấy đơn hàng nào
-          </Card>
-        ) : (
-          filteredOrders.map((order) => (
+      {filteredOrders.length === 0 ? (
+        <Card>
+          <CardContent className="pt-6 text-center text-gray-500">
+            Chưa có đơn hàng nào
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredOrders.map((order) => (
             <Card key={order.id}>
-              <div className="border-b border-slate-200 p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <CardHeader>
+                <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-sm text-slate-600">Mã đơn</p>
-                    <p className="font-mono text-lg font-semibold text-slate-900">
-                      {order.order_code}
+                    <CardTitle>Đơn #{order.order_code}</CardTitle>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {new Date(order.created_at).toLocaleString("vi-VN")}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-600">Tổng tiền</p>
-                    <p className="text-2xl font-semibold text-slate-900">
-                      {formatVND(order.total_amount)}
-                    </p>
-                  </div>
+                  <span
+                    className={`px-3 py-1 rounded text-sm font-semibold ${
+                      order.payment_status === "completed"
+                        ? "bg-green-100 text-green-800"
+                        : order.payment_status === "cancelled"
+                        ? "bg-red-100 text-red-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}
+                  >
+                    {order.payment_status === "completed"
+                      ? "Hoàn thành"
+                      : order.payment_status === "cancelled"
+                      ? "Hủy"
+                      : "Chờ thanh toán"}
+                  </span>
                 </div>
-
-                <div className="mt-4 grid gap-4 grid-cols-1 sm:grid-cols-3 text-sm">
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <p className="text-slate-600">Người đặt</p>
-                    <p className="font-medium text-slate-900">
-                      {order.registration?.full_name}
+                    <p className="text-xs text-gray-500">Người đặt</p>
+                    <p className="font-semibold">
+                      {order.registration?.full_name || "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-600">SĐT / Email</p>
-                    <p className="font-medium text-slate-900">
-                      {order.registration?.phone_number}
+                    <p className="text-xs text-gray-500">SĐT / Email</p>
+                    <p className="text-sm">
+                      {order.registration?.phone_number}{" "}
                       {order.registration?.email && (
                         <>
-                          {' / '}
+                          {" / "}
                           {order.registration.email}
                         </>
                       )}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-600">Đơn vị</p>
-                    <p className="font-medium text-slate-900">
-                      {order.registration?.unit?.name || 'Không có'}
+                    <p className="text-xs text-gray-500">Đơn vị</p>
+                    <p className="font-semibold">
+                      {order.registration?.unit?.name || "Không có"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Tổng tiền</p>
+                    <p className="font-semibold text-lg">
+                      {formatVND(order.total_amount)}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-3">
-                    <StatusBadge status={order.payment_status} />
-                    <span className="text-xs text-slate-500">
-                      {new Date(order.created_at).toLocaleDateString('vi-VN')}
-                    </span>
+                {order.order_items && order.order_items.length > 0 && (
+                  <div className="mb-4 pb-4 border-t">
+                    <p className="text-sm font-semibold mb-2">Chi tiết hoạt động:</p>
+                    <ul className="space-y-1 text-sm">
+                      {order.order_items.map((item) => (
+                        <li key={item.id} className="flex justify-between">
+                          <span>
+                            {item.activity?.title || "Hoạt động"} × {item.quantity}
+                            {item.pricing_type && (
+                              <span className="text-gray-500">
+                                ({item.pricing_type})
+                              </span>
+                            )}
+                          </span>
+                          <span>{formatVND(item.price_per_unit * item.quantity)}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedOrderId(
-                        expandedOrderId === order.id ? null : order.id
-                      )
-                    }
-                    className="flex w-full sm:w-auto items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-                  >
-                    <span>Chi tiết đơn hàng ({order.order_items.length})</span>
-                    <span className="text-slate-400">
-                      {expandedOrderId === order.id ? '▲' : '▼'}
-                    </span>
-                  </button>
-                </div>
-              </div>
+                )}
 
-              {/* Order Items Expanded */}
-              {expandedOrderId === order.id && (
-                <div className="border-b border-slate-200 bg-slate-50 p-6">
-                  <div className="space-y-2 text-xs">
-                    {order.order_items.map((item) => (
-                      <div key={item.id} className="flex justify-between py-2">
-                        <div className="text-slate-600">
-                          <p>
-                            {item.activity?.title || 'Hoạt động'} × {item.quantity}
-                          </p>
-                          {item.pricing_type && (
-                            <p className="text-slate-400">
-                              ({item.pricing_type})
-                            </p>
-                          )}
-                        </div>
-                        <p className="font-semibold text-slate-900">
-                          {formatVND(item.price_per_unit * item.quantity)}
-                        </p>
-                      </div>
-                    ))}
-                    <div className="mt-3 flex justify-between border-t border-slate-200 pt-3 font-semibold text-slate-900">
-                      <span>Tổng cộng</span>
-                      <span>{formatVND(order.total_amount)}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              {order.payment_status === 'pending' && (
-                <div className="flex gap-2 p-6">
+                {order.payment_status === "pending" && (
                   <Button
-                    onClick={() => handleConfirmPayment(order.id)}
-                    variant="primary"
-                    className="flex-1"
+                    onClick={() => confirmPayment(order.id)}
+                    className="bg-green-600 hover:bg-green-700"
                   >
-                    ✅ Xác nhận thanh toán
+                    Xác nhận thanh toán
                   </Button>
-                  <Button
-                    onClick={() => handleMarkFailed(order.id)}
-                    variant="outline"
-                    className="flex-1 text-red-600"
-                  >
-                    ❌ Đánh dấu thất bại
-                  </Button>
-                </div>
-              )}
+                )}
+              </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
-  )
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
-    completed: 'bg-green-50 text-green-700 border border-green-200',
-    failed: 'bg-red-50 text-red-700 border border-red-200',
-  }
-
-  const labels: Record<string, string> = {
-    pending: 'Chờ thanh toán',
-    completed: 'Hoàn tất',
-    failed: 'Thất bại',
-  }
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-        styles[status] || styles.pending
-      }`}
-    >
-      {labels[status] || status}
-    </span>
   )
 }

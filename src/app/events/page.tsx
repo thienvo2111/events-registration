@@ -1,335 +1,323 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { ShoppingCart } from "lucide-react"
-
-import { supabase } from "@/lib/supabase"
-import { formatVND } from "@/lib/utils"
-import type { Activity, PricingType } from "@/lib/types"
-import { Button } from "@/components/ui/button"
 import { useCart } from "@/context/CartContext"
-
-type QuantityMap = Record<string, number>
-type PricingMap = Record<string, PricingType>
+import { useRouter } from "next/navigation"
+import { createSupabaseClient } from "@/utils/supabase/client"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { formatVND } from "@/lib/format"
+import type { Activity, CartItem, PricingType } from "@/lib/types"
+import { Minus, Plus, ShoppingCart, Users } from "lucide-react"
 
 export default function EventsPage() {
-  const { addItem, state, showToast } = useCart()
-  const totalItemsInCart = state.totalItems
+  const supabase = createSupabaseClient()
+  const { state, addItem } = useCart()
+  const router = useRouter()
 
   const [activities, setActivities] = useState<Activity[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // trạng thái local cho từng activity: số lượng + loại giá
-  const [quantities, setQuantities] = useState<QuantityMap>({})
-  const [pricingTypes, setPricingTypes] = useState<PricingMap>({})
+  const [error, setError] = useState("")
+  const [quantities, setQuantities] = useState<Record<string, Record<string, number>>>({})
 
   useEffect(() => {
-    async function loadActivities() {
-      setLoading(true)
-      setError(null)
-
-      const { data, error } = await supabase
-        .from("activities")
-        .select("*")
-
-      if (error) {
-        console.error(error)
-        setError(error.message)
-        setActivities([])
-      } else {
-        const acts = (data as Activity[]) ?? []
-        setActivities(acts)
-
-        const q: QuantityMap = {}
-        const p: PricingMap = {}
-
-        acts.forEach((a) => {
-          q[a.id] = 1
-          p[a.id] = "non_member"
-        })
-
-        setQuantities(q)
-        setPricingTypes(p)
-      }
-
-      setLoading(false)
-    }
-
     loadActivities()
   }, [])
 
-  // lấy số lượng trong giỏ cho 1 activity + pricingType
-  const getCartQuantityFor = (
-    activityId: string,
-    pricingType: PricingType,
-  ) => {
-    const item = state.items.find(
-      (i) =>
-        i.activityId === activityId && i.pricingType === pricingType,
-    )
-    return item ? item.quantity : 0
+  async function loadActivities() {
+    try {
+      setLoading(true)
+      const { data, error: err } = await supabase
+        .from("activities")
+        .select("*")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+
+      if (err) throw err
+
+      setActivities(data || [])
+      
+      // Initialize quantities
+      const initQuantities: Record<string, Record<string, number>> = {}
+      data?.forEach((activity: Activity) => {
+        initQuantities[activity.id] = {
+          member: 1,
+          non_member: 1,
+        }
+      })
+      setQuantities(initQuantities)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleAddToCart = (activity: Activity) => {
-    const pricingType: PricingType =
-      pricingTypes[activity.id] ?? "non_member"
-    const quantity = quantities[activity.id] ?? 1
+  function handleChangeQuantity(
+    activityId: string,
+    pricingType: PricingType,
+    change: number
+  ) {
+    setQuantities((prev) => {
+      const current = prev[activityId]?.[pricingType] || 1
+      const newQuantity = Math.max(1, current + change)
+      return {
+        ...prev,
+        [activityId]: {
+          ...prev[activityId],
+          [pricingType]: newQuantity,
+        },
+      }
+    })
+  }
 
-    const unitPrice =
+  function handleAddToCart(activity: Activity, pricingType: PricingType) {
+    const quantity = quantities[activity.id]?.[pricingType] || 1
+    const price =
       pricingType === "member"
-        ? activity.price_member ?? 0
-        : activity.price_non_member ?? 0
+        ? activity.price_member || 0
+        : activity.price_non_member || 0
 
-    addItem({
+    const cartItem: CartItem = {
       activityId: activity.id,
       title: activity.title,
       quantity,
-      unitPrice,
+      unitPrice: price,
       pricingType,
-    })
+    }
 
-    showToast(`Đã thêm ${quantity} x ${activity.title} vào giỏ hàng`)
-  }
-
-  const handleChangeQuantity = (id: string, q: number) => {
+    addItem(cartItem)
+    
+    // Reset quantity after adding
     setQuantities((prev) => ({
       ...prev,
-      [id]: Math.max(1, q),
+      [activity.id]: {
+        ...prev[activity.id],
+        [pricingType]: 1,
+      },
     }))
   }
 
-  // khi đổi member / non-member: nếu chưa có trong giỏ → 1, nếu đã có → số lượng trong giỏ
-  const handleChangePricing = (id: string, type: PricingType) => {
-    setPricingTypes((prev) => ({
-      ...prev,
-      [id]: type,
-    }))
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Đang tải danh sách hoạt động...</p>
+        </div>
+      </div>
+    )
+  }
 
-    const inCartQty = getCartQuantityFor(id, type)
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded">
+        <p className="text-red-700">Lỗi khi tải dữ liệu: {error}</p>
+      </div>
+    )
+  }
 
-    setQuantities((prev) => ({
-      ...prev,
-      [id]: inCartQty > 0 ? inCartQty : 1,
-    }))
+  if (activities.length === 0) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        <p>Không có hoạt động nào</p>
+      </div>
+    )
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto max-w-3xl px-4 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">
-              Danh sách hoạt động
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Vui lòng chọn số lượng và loại hình (Member/Non‑member)
+            <h1 className="text-4xl font-bold">Các hoạt động</h1>
+            <p className="text-gray-600 mt-2">
+              Tổng: {activities.length} hoạt động
             </p>
           </div>
-          <Link href="/cart">
-            <Button
-              variant="outline"
-              size="sm"
-              className="relative flex items-center gap-2"
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Giỏ hàng</span>
-              {totalItemsInCart > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1.5">
-                  {totalItemsInCart}
-                </span>
-              )}
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <main className="mx-auto max-w-3xl px-4 py-6">
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-sm text-gray-600">
-            Tổng: {activities.length} hoạt động
-          </p>
+          <Button
+            onClick={() => router.push("/cart")}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Giỏ hàng ({state.totalItems})
+          </Button>
         </div>
 
-        {loading && (
-          <p className="text-sm text-gray-600">
-            Đang tải danh sách hoạt động...
-          </p>
-        )}
+        {/* Activities Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activities.map((activity) => (
+            <Card key={activity.id} className="overflow-hidden flex flex-col">
+              {/* Activity Header */}
+              <CardHeader>
+                <CardTitle className="line-clamp-2">{activity.title}</CardTitle>
+                {activity.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2 mt-2">
+                    {activity.description}
+                  </p>
+                )}
+              </CardHeader>
 
-        {!loading && error && (
-          <p className="text-sm text-red-600">
-            Lỗi khi tải dữ liệu: {error}
-          </p>
-        )}
-
-        {!loading && !error && activities.length === 0 && (
-          <p className="text-sm text-gray-600">
-            Không có hoạt động nào
-          </p>
-        )}
-
-        {!loading && !error && activities.length > 0 && (
-          <div className="space-y-4">
-            {activities.map((activity) => {
-              const pricingType: PricingType =
-                pricingTypes[activity.id] ?? "non_member"
-              const quantity = quantities[activity.id] ?? 1
-
-              const memberPrice = activity.price_member ?? 0
-              const nonMemberPrice = activity.price_non_member ?? 0
-
-              const unitPrice =
-                pricingType === "member"
-                  ? memberPrice
-                  : nonMemberPrice
-
-              return (
-                <div
-                  key={activity.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-3"
-                >
-                  <div className="flex justify-between">
+              <CardContent className="flex-1 flex flex-col">
+                {/* Activity Details */}
+                <div className="space-y-3 mb-4">
+                  {activity.start_date && (
                     <div>
-                      <h2 className="text-base font-semibold text-gray-900">
-                        {activity.title}
-                      </h2>
-                      {activity.description && (
-                        <p className="mt-1 text-sm text-gray-600">
-                          {activity.description}
-                        </p>
-                      )}
+                      <p className="text-xs text-gray-500">Thời gian</p>
+                      <p className="text-sm font-medium">
+                        {new Date(activity.start_date).toLocaleString("vi-VN")}
+                      </p>
                     </div>
-                  </div>
+                  )}
+                  {activity.location && (
+                    <div>
+                      <p className="text-xs text-gray-500">Địa điểm</p>
+                      <p className="text-sm font-medium">{activity.location}</p>
+                    </div>
+                  )}
+                  {activity.max_participants && (
+                    <div>
+                      <p className="text-xs text-gray-500">Số chỗ tối đa</p>
+                      <p className="text-sm font-medium">
+                        {activity.max_participants}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Chọn loại giá */}
-                  <div className="mt-2">
-                    <p className="text-sm font-medium text-gray-700 mb-1">
-                      Hình thức:
+                {/* Pricing Section */}
+                <div className="space-y-4 mt-auto">
+                  {/* Member Pricing */}
+                  <div className="bg-blue-50 p-4 rounded">
+                    <p className="text-sm text-gray-600 mb-2">Giá Member</p>
+                    <p className="text-2xl font-bold text-blue-600 mb-3">
+                      {formatVND(activity.price_member || 0)}
                     </p>
-                    <div className="flex gap-2">
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="radio"
-                          name={`pricing-${activity.id}`}
-                          checked={pricingType === "non_member"}
-                          onChange={() =>
-                            handleChangePricing(
-                              activity.id,
-                              "non_member",
-                            )
-                          }
-                        />
-                        <span className="text-sm text-gray-700">
-                          Non‑member ({formatVND(nonMemberPrice)})
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-1">
-                        <input
-                          type="radio"
-                          name={`pricing-${activity.id}`}
-                          checked={pricingType === "member"}
-                          onChange={() =>
-                            handleChangePricing(
-                              activity.id,
-                              "member",
-                            )
-                          }
-                        />
-                        <span className="text-sm text-gray-700">
-                          Member ({formatVND(memberPrice)})
-                        </span>
-                      </label>
-                    </div>
-                  </div>
 
-                  {/* Chọn số lượng */}
-                  <div className="mt-3 flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
-                      Số lượng:
-                    </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
+                        size="sm"
                         onClick={() =>
-                          handleChangeQuantity(
-                            activity.id,
-                            quantity - 1,
-                          )
+                          handleChangeQuantity(activity.id, "member", -1)
                         }
                       >
-                        -
+                        <Minus className="w-4 h-4" />
                       </Button>
-                      <input
+                      <Input
                         type="number"
-                        min={1}
-                        value={quantity}
-                        onChange={(e) =>
-                          handleChangeQuantity(
-                            activity.id,
-                            Number(e.target.value) || 1,
-                          )
-                        }
-                        className="w-16 border rounded-md px-2 py-1 text-center text-sm"
+                        min="1"
+                        value={quantities[activity.id]?.member || 1}
+                        onChange={(e) => {
+                          const val = Math.max(1, Number(e.target.value) || 1)
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [activity.id]: {
+                              ...prev[activity.id],
+                              member: val,
+                            },
+                          }))
+                        }}
+                        className="w-16 text-center"
                       />
                       <Button
                         type="button"
                         variant="outline"
-                        size="icon"
-                        className="h-8 w-8"
+                        size="sm"
                         onClick={() =>
-                          handleChangeQuantity(
-                            activity.id,
-                            quantity + 1,
-                          )
+                          handleChangeQuantity(activity.id, "member", 1)
                         }
                       >
-                        +
+                        <Plus className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
 
-                  {/* Giá & nút thêm giỏ */}
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="text-sm font-semibold text-gray-900">
-                      {unitPrice === 0
-                        ? "Miễn phí"
-                        : `${formatVND(unitPrice)} x ${quantity}`}
-                    </div>
                     <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddToCart(activity)}
+                      onClick={() =>
+                        handleAddToCart(activity, "member")
+                      }
+                      className="w-full bg-blue-600 hover:bg-blue-700"
                     >
                       Thêm vào giỏ
                     </Button>
                   </div>
-                  {/* Nút xem người tham gia cho hoạt động này */}
-                <div className="mt-2 flex justify-end">
-                  <Link href={`/participants?activity_id=${activity.id}`}>
+
+                  {/* Non-Member Pricing */}
+                  <div className="bg-orange-50 p-4 rounded">
+                    <p className="text-sm text-gray-600 mb-2">Giá Non-Member</p>
+                    <p className="text-2xl font-bold text-orange-600 mb-3">
+                      {formatVND(activity.price_non_member || 0)}
+                    </p>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleChangeQuantity(activity.id, "non_member", -1)
+                        }
+                      >
+                        <Minus className="w-4 h-4" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={quantities[activity.id]?.non_member || 1}
+                        onChange={(e) => {
+                          const val = Math.max(1, Number(e.target.value) || 1)
+                          setQuantities((prev) => ({
+                            ...prev,
+                            [activity.id]: {
+                              ...prev[activity.id],
+                              non_member: val,
+                            },
+                          }))
+                        }}
+                        className="w-16 text-center"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          handleChangeQuantity(activity.id, "non_member", 1)
+                        }
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+
                     <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-xs"
+                      onClick={() =>
+                        handleAddToCart(activity, "non_member")
+                      }
+                      className="w-full bg-orange-600 hover:bg-orange-700"
                     >
-                      Xem người tham gia
+                      Thêm vào giỏ
                     </Button>
-                  </Link>
-                </div> 
+                  </div>
+
+                  {/* View Participants Button */}
+                  <Button
+                    onClick={() =>
+                      router.push(`/participants?activity_id=${activity.id}`)
+                    }
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Xem danh sách người tham dự
+                  </Button>
                 </div>
-              )
-                    
-            })}
-          </div>
-        )}
-      </main>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
