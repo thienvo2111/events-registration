@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { createSupabaseClient } from "@/utils/supabase/client"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const supabase = createSupabaseClient()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -23,11 +23,14 @@ export default function AdminLoginPage() {
     setError("")
     setLoading(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     setLoading(false)
 
-    if (error) {
+    if (authError) {
       setError("Sai email hoặc mật khẩu")
       return
     }
@@ -36,44 +39,71 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Đăng nhập Admin</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Email</label>
-              <Input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Mật khẩu</label>
-              <Input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md w-full">
+        <Card>
+          <CardHeader>
+            <CardTitle>Đăng nhập Admin</CardTitle>
+          </CardHeader>
+          <CardContent>
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 rounded px-2 py-1">{error}</p>
+              <div className="p-3 bg-red-50 border border-red-200 rounded mb-4">
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Mật khẩu
+                </label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={loading}
+              >
+                {loading ? "Đang đăng nhập..." : "Đăng nhập"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-gray-600">Đang tải...</p>
+        </div>
+      }
+    >
+      <AdminLoginContent />
+    </Suspense>
   )
 }
