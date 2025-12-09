@@ -20,11 +20,7 @@ export default function LandingPage() {
       `}</style>
 
       <div
-        className="
-          home-hero
-          relative flex min-h-[calc(100vh-4rem-3rem)] items-center justify-center
-          bg-[#3b0008] bg-cover bg-center
-        "
+        className="home-hero relative flex min-h-[calc(100vh-4rem-3rem)] items-center justify-center bg-[#3b0008] bg-cover bg-center"
       >
         {/* overlay tối cho mọi kích thước */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#3b0008]/95 via-[#3b0008]/55 to-[#3b0008]/85" />
