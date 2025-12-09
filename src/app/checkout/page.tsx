@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 
 import { useCart } from "@/context/CartContext"
 import { supabase } from "@/lib/supabase"
-import { CheckoutSchema } from "@/lib/validations"
+import { CheckoutSchema, type CheckoutFormInput } from "@/lib/validations"
 import { generateOrderCode, formatVND } from "@/lib/utils"
 import { createPaymentQuickLink } from "@/lib/qr-generator"
 import { VIETQR_CONFIG } from "@/lib/constants"
@@ -50,17 +50,17 @@ export default function CheckoutPage() {
     null,
   )
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    watch,
-  } = useForm<CheckoutForm>({
-    resolver: zodResolver(CheckoutSchema),
-    defaultValues: {
-      seat_req: "protocol",
-    },
-  })
+ const {
+  register,
+  handleSubmit,
+  formState: { errors },
+  watch,
+} = useForm<CheckoutFormInput>({
+  resolver: zodResolver(CheckoutSchema),
+  defaultValues: {
+    seat_req: "protocol",
+  },
+})
 
   const seatReqValue = watch("seat_req")
 
@@ -222,7 +222,7 @@ export default function CheckoutPage() {
     )
   }
 
-  const onSubmit = async (data: CheckoutForm) => {
+  const onSubmit = async (data: CheckoutFormInput) => {
     try {
       setIsProcessing(true)
 
