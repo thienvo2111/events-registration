@@ -1,329 +1,348 @@
 "use client"
 
 import { useState } from "react"
-import { createSupabaseClient } from "@/utils/supabase/client"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { SearchOrderSchema } from "@/lib/validations"
+import { supabase } from "@/lib/supabase"
+import { formatVND } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { formatVND } from "@/lib/format"
+import { Card } from "@/components/ui/card"
 
-interface OrderResult {
-  id: string
-  order_code: string
-  payment_status: "pending" | "completed" | "cancelled"
-  total_amount: number
-  created_at: string
-  registration?: {
-    id: string
-    full_name: string
-    phone_number: string
-    email?: string | null
-  } | null
-  order_items?: Array<{
-    id: string
-    quantity: number
-    price_per_unit: number
-    subtotal: number
-    pricing_type?: string | null
-    activity?: {
-      title: string
-    } | null
-  }>
+type SearchForm = {
+  search_by: "order_code" | "phone_number"
+  value: string
 }
 
 export default function SearchPage() {
-  const supabase = createSupabaseClient()
-
-  const [searchType, setSearchType] = useState<"order_code" | "phone_number">(
-    "order_code"
-  )
-  const [searchValue, setSearchValue] = useState("")
-  const [results, setResults] = useState<OrderResult[]>([])
+  const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [hasSearched, setHasSearched] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  async function handleSearch(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
-    setResults([])
-    setHasSearched(true)
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+  } = useForm<SearchForm>({
+    resolver: zodResolver(SearchOrderSchema),
+    defaultValues: { search_by: "order_code" },
+  })
 
-    if (!searchValue.trim()) {
-      setError("Vui lòng nhập thông tin tìm kiếm")
-      return
+  const searchBy = watch("search_by")
+
+  async function onSubmit(data: SearchForm) {
+  setLoading(true)
+  setError(null)
+  setResults([])
+
+  try {
+    if (data.search_by === "order_code") {
+      // Tìm trực tiếp theo mã đơn
+      const { data: orders, error: err } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          order_code,
+          created_at,
+          payment_status,
+          total_amount,
+          registration:registrations(
+            full_name,
+            phone_number,
+            email,
+            title,
+            seat_req,
+            spec_req,
+            note,
+            unit:units(name)
+          ),
+          order_items(
+            activity_id,
+            quantity,
+            price_per_unit,
+            subtotal,
+            activities(title)
+          )
+        `)
+        .eq("order_code", data.value.trim())
+        .order("created_at", { ascending: false })
+
+      if (err) throw err
+      setResults(orders || [])
+    } else {
+      // 1. Tìm các registration theo SĐT
+      const phone = data.value.trim()
+      const { data: regs, error: regErr } = await supabase
+        .from("registrations")
+        .select("id")
+        .eq("phone_number", phone)
+
+      if (regErr) throw regErr
+      if (!regs || regs.length === 0) {
+        setResults([])
+        return
+      }
+
+      const regIds = regs.map((r) => r.id)
+
+      // 2. Lấy tất cả orders có registration_id trong regIds
+      const { data: orders, error: err } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          order_code,
+          created_at,
+          payment_status,
+          total_amount,
+          registration:registrations(
+            full_name,
+            phone_number,
+            email,
+            title,
+            seat_req,
+            spec_req,
+            note,
+            unit:units(name)
+          ),
+          order_items(
+            activity_id,
+            quantity,
+            price_per_unit,
+            subtotal,
+            activities(title)
+          )
+        `)
+        .in("registration_id", regIds)
+        .order("created_at", { ascending: false })
+
+      if (err) throw err
+      setResults(orders || [])
     }
-
-    try {
-      setLoading(true)
-
-      let query = supabase.from("orders").select(
-        `
-        id,
-        order_code,
-        payment_status,
-        total_amount,
-        created_at,
-        registration:registrations(id, full_name, phone_number, email),
-        order_items(id, quantity, price_per_unit, subtotal, pricing_type, activity:activities(title))
-      `
-      )
-
-      if (searchType === "order_code") {
-        query = query.ilike("order_code", `%${searchValue}%`)
-      } else {
-        query = query.eq("registration.phone_number", searchValue)
-      }
-
-      const { data, error: err } = await query.order("created_at", {
-        ascending: false,
-      })
-
-      if (err) {
-        throw err
-      }
-
-      // FIX: Map data to handle array relationships from Supabase
-      const mappedResults: OrderResult[] = (data ?? []).map((order: any) => ({
-        id: order.id,
-        order_code: order.order_code,
-        payment_status: order.payment_status,
-        total_amount: order.total_amount,
-        created_at: order.created_at,
-        registration: Array.isArray(order.registration)
-          ? order.registration[0] ?? null
-          : order.registration,
-        order_items: Array.isArray(order.order_items)
-          ? order.order_items
-          : order.order_items
-          ? [order.order_items]
-          : [],
-      }))
-
-      setResults(mappedResults)
-
-      if (mappedResults.length === 0) {
-        setError(
-          `Không tìm thấy đơn hàng với ${
-            searchType === "order_code" ? "mã đơn này" : "số điện thoại này"
-          }. Vui lòng kiểm tra lại thông tin và thử lại.`
-        )
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Lỗi khi tìm kiếm đơn hàng. Vui lòng thử lại."
-      )
-    } finally {
-      setLoading(false)
-    }
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : "Không thể tìm kiếm đơn hàng. Vui lòng thử lại.",
+    )
+  } finally {
+    setLoading(false)
   }
+}
 
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleString("vi-VN")
-  }
+
+  const formatDate = (d: string) =>
+    new Date(d).toLocaleString("vi-VN", {
+      hour12: false,
+    })
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">Tìm đơn hàng của bạn</h1>
-          <p className="text-gray-600">
+    <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
+      <div className="mx-auto max-w-4xl space-y-6">
+        <header className="text-center">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Tra cứu đơn hàng
+          </h1>
+          <p className="mt-2 text-sm text-amber-100/85">
             Tìm thông tin đơn hàng của bạn bằng mã đơn hoặc số điện thoại
           </p>
-        </div>
+        </header>
 
-        {/* Search Form */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <form onSubmit={handleSearch} className="space-y-4">
-              {/* Search Type Toggle */}
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="searchType"
-                    value="order_code"
-                    checked={searchType === "order_code"}
-                    onChange={(e) =>
-                      setSearchType(e.target.value as "order_code" | "phone_number")
-                    }
-                    className="cursor-pointer"
-                  />
-                  <span>Tìm theo mã đơn</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="searchType"
-                    value="phone_number"
-                    checked={searchType === "phone_number"}
-                    onChange={(e) =>
-                      setSearchType(e.target.value as "order_code" | "phone_number")
-                    }
-                    className="cursor-pointer"
-                  />
-                  <span>Tìm theo số điện thoại</span>
-                </label>
+        <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-6 text-amber-50">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-amber-100">Tìm kiếm theo</p>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      value="order_code"
+                      {...register("search_by")}
+                      checked={searchBy === "order_code"}
+                      className="cursor-pointer"
+                    />
+                    <span>Mã đơn hàng</span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <input
+                      type="radio"
+                      value="phone_number"
+                      {...register("search_by")}
+                      checked={searchBy === "phone_number"}
+                      className="cursor-pointer"
+                    />
+                    <span>Số điện thoại</span>
+                  </label>
+                </div>
               </div>
 
-              {/* Search Input */}
-              <div className="flex gap-2">
-                <Input
-                  type="text"
+              <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
+                <input
+                  {...register("value")}
+                  className="flex-1 rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
                   placeholder={
-                    searchType === "order_code"
-                      ? "Nhập mã đơn hàng..."
-                      : "Nhập số điện thoại..."
+                    searchBy === "order_code"
+                      ? "Nhập mã đơn (ví dụ: JCI2026...)"
+                      : "Nhập số điện thoại đã đăng ký"
                   }
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  className="flex-1"
                 />
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="rounded-full bg-amber-400 px-5 py-2 text-sm font-semibold text-[#3b0008] hover:bg-amber-300"
                 >
                   {loading ? "Đang tìm..." : "Tìm kiếm"}
                 </Button>
               </div>
-            </form>
-          </CardContent>
+            </div>
+            {errors.value && (
+              <p className="text-xs text-red-300">
+                {errors.value.message as string}
+              </p>
+            )}
+          </form>
         </Card>
 
-        {/* Error Message */}
         {error && (
-          <Card className="mb-6 border-red-200 bg-red-50">
-            <CardContent className="pt-6">
-              <p className="text-red-700">{error}</p>
-            </CardContent>
-          </Card>
+          <div className="rounded-lg border border-red-500/60 bg-red-900/40 p-4 text-sm text-red-200">
+            {error}
+          </div>
         )}
 
-        {/* Results */}
-        {hasSearched && !loading && results.length > 0 && (
+        {results.length === 0 && !loading && !error && (
+          <p className="text-center text-sm text-amber-100/80">
+            Không tìm thấy đơn hàng. Hãy kiểm tra lại thông tin bạn đã nhập.
+          </p>
+        )}
+
+        {results.length > 0 && (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-amber-100/85">
               Tìm thấy {results.length} đơn hàng
             </p>
 
             {results.map((order) => {
               const reg = order.registration
               const itemCount = order.order_items?.length ?? 0
-
+              const unitName = reg?.unit?.name ?? "—"
               return (
-                <Card key={order.id}>
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          Mã đơn hàng: {order.order_code}
-                        </CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {formatDate(order.created_at)}
-                        </p>
-                      </div>
+                <Card
+                  key={order.id}
+                  className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-4 text-sm text-amber-50 md:p-5"
+                >
+                  <div className="mb-3 flex flex-col justify-between gap-2 md:flex-row md:items-center">
+                    <div className="space-y-1">
+                      <p className="text-xs text-amber-200/80">
+                        Thời gian tạo đơn
+                      </p>
+                      <p className="font-medium">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <p className="text-xs text-amber-200/80">Mã đơn hàng</p>
+                      <p className="font-mono text-sm font-semibold">
+                        {order.order_code}
+                      </p>
                       <span
-                        className={`px-3 py-1 rounded text-sm font-semibold ${
-                          order.payment_status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : order.payment_status === "cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-yellow-100 text-yellow-800"
+                        className={`mt-1 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                          order.payment_status === "paid"
+                            ? "bg-green-500/20 text-green-300"
+                            : "bg-yellow-500/20 text-yellow-300"
                         }`}
                       >
-                        {order.payment_status === "completed"
-                          ? "Hoàn thành"
-                          : order.payment_status === "cancelled"
-                          ? "Hủy"
+                        {order.payment_status === "paid"
+                          ? "Đã thanh toán"
                           : "Chờ thanh toán"}
                       </span>
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent>
-                    {/* Customer Info */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pb-4 border-b">
-                      <div>
-                        <p className="text-sm text-gray-600">Tên:</p>
-                        <p className="font-medium">
-                          {reg?.full_name || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Số điện thoại:</p>
-                        <p className="font-medium">
-                          {reg?.phone_number || "—"}
-                        </p>
-                      </div>
-                      {reg?.email && (
-                        <div className="md:col-span-2">
-                          <p className="text-sm text-gray-600">Email:</p>
-                          <p className="font-medium">{reg.email}</p>
-                        </div>
-                      )}
+                  <div className="mt-2 grid gap-3 border-t border-[#8b1c1f]/40 pt-3 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <p className="text-xs text-amber-200/80">Tên</p>
+                      <p className="font-medium">
+                        {reg?.full_name || "—"}
+                      </p>
+                      <p className="text-xs text-amber-200/80">
+                        Số điện thoại
+                      </p>
+                      <p className="font-medium">
+                        {reg?.phone_number || "—"}
+                      </p>
+                      <p className="text-xs text-amber-200/80">Email</p>
+                      <p className="font-medium">
+                        {reg?.email || "—"}
+                      </p>
+                      <p className="text-xs text-amber-200/80">
+                        Đơn vị / Chapter
+                      </p>
+                      <p className="font-medium">{unitName}</p>
+                      <p className="text-xs text-amber-200/80">
+                        Chức danh hiện tại
+                      </p>
+                      <p className="font-medium">
+                        {reg?.title || "—"}
+                      </p>
                     </div>
 
-                    {/* Order Items */}
-                    {order.order_items && order.order_items.length > 0 && (
-                      <div className="mb-4 pb-4 border-b">
-                        <p className="text-sm font-semibold mb-2">
-                          Danh sách hoạt động ({itemCount}):
-                        </p>
-                        <ul className="space-y-1 text-sm">
-                          {order.order_items.map((item) => (
-                            <li key={item.id} className="flex justify-between">
-                              <span>
-                                {item.activity?.title || "Hoạt động"} × {item.quantity}
-                                {item.pricing_type && (
-                                  <span className="text-gray-500">
-                                    ({item.pricing_type})
-                                  </span>
-                                )}
-                              </span>
-                              <span className="font-medium">
-                                {formatVND(item.subtotal)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <p className="text-xs text-amber-200/80">
+                        Ưu tiên chỗ ngồi
+                      </p>
+                      <p className="font-medium">
+                        {reg?.seat_req === "chapter_table"
+                          ? "Ưu tiên ngồi theo bàn của Chapter"
+                          : reg?.seat_req === "protocol"
+                          ? "Ưu tiên ngồi theo vị trí Protocol do BTC sắp xếp"
+                          : "—"}
+                      </p>
+                      <p className="mt-2 text-xs text-amber-200/80">
+                        Yêu cầu đặc biệt
+                      </p>
+                      <p className="text-sm">
+                        {reg?.spec_req || "—"}
+                      </p>
+                      <p className="mt-2 text-xs text-amber-200/80">
+                        Ghi chú
+                      </p>
+                      <p className="text-sm">
+                        {reg?.note || "—"}
+                      </p>
+                    </div>
+                  </div>
 
-                    {/* Total */}
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold">Tổng tiền:</span>
-                      <span className="text-2xl font-bold text-blue-600">
+                  <div className="mt-3 border-t border-[#8b1c1f]/40 pt-3 text-sm">
+                    <p className="mb-1 font-semibold">
+                      Danh sách hoạt động ({itemCount}):
+                    </p>
+                    <div className="space-y-1">
+                      {order.order_items?.map((it: any) => (
+                        <div
+                          key={`${it.activity_id}-${it.activities?.title}`}
+                          className="flex justify-between"
+                        >
+                          <span>
+                            {it.activities?.title || "—"} x {it.quantity}
+                          </span>
+                          <span>
+                            {formatVND(it.subtotal)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 flex justify-between border-t border-[#8b1c1f]/40 pt-2 font-semibold">
+                      <span>Tổng cộng</span>
+                      <span className="text-amber-300">
                         {formatVND(order.total_amount)}
                       </span>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               )
             })}
           </div>
-        )}
-
-        {/* Help Section */}
-        {!hasSearched && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Cần trợ giúp?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm text-gray-600">
-              <p>
-                <strong>Không tìm thấy đơn hàng:</strong> kiểm tra lại mã đơn
-                hoặc số điện thoại bạn nhập.
-              </p>
-              <p>
-                <strong>Quên mã đơn hàng:</strong> hãy sử dụng số điện thoại đã
-                đăng ký để tra cứu.
-              </p>
-            </CardContent>
-          </Card>
         )}
       </div>
     </div>

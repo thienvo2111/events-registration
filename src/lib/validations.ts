@@ -13,6 +13,10 @@ export const CheckoutSchema = z.object({
   ),
   email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
   unit_id: z.string().uuid('Chọn đơn vị công tác'),
+  title: z.string().optional(),                          // chức danh
+  seat_req: z.enum(['protocol', 'chapter_table']).optional(), // ưu tiên chỗ ngồi
+  spec_req: z.string().optional(),                      // yêu cầu đặc biệt
+  note: z.string().optional(),                          // ghi chú
 });
 
 export const SearchOrderSchema = z.object({

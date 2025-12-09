@@ -26,12 +26,12 @@ export default function AdminLayout({ children }: PropsWithChildren) {
           <span className="font-semibold text-slate-900">Admin</span>
         </div>
         <nav className="p-4 space-y-2 text-sm">
-          <AdminLink href="/admin/dashboard" active={isActive("/admin/dashboard")}>
+          {/* <AdminLink href="/admin/dashboard" active={isActive("/admin/dashboard")}>
             Dashboard
           </AdminLink>
           <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
             Hoạt động
-          </AdminLink>
+          </AdminLink> */}
           <AdminLink href="/admin/orders" active={isActive("/admin/orders")}>
             Đơn hàng
           </AdminLink>

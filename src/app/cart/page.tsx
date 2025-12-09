@@ -1,5 +1,3 @@
-// src/app/cart/page.tsx
-
 "use client"
 
 import { useState } from "react"
@@ -8,7 +6,6 @@ import { useCart } from "@/context/CartContext"
 import { formatVND } from "@/lib/format"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Trash2, ArrowLeft, ShoppingCart } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -20,176 +17,188 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md p-8 text-center">
-          <ShoppingCart className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Giỏ hàng trống</h1>
-          <p className="text-gray-600 mb-6">
-            Bạn chưa chọn hoạt động nào. Hãy quay lại để chọn.
+      <div className="min-h-screen bg-[#3b0008] px-4 py-10 text-amber-50 md:px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <ShoppingCart className="mx-auto mb-4 h-10 w-10 text-amber-300" />
+          <h1 className="text-xl font-semibold md:text-2xl">
+            Bạn chưa chọn hoạt động nào.
+          </h1>
+          <p className="mt-2 text-sm text-amber-100/80">
+            Hãy quay lại trang đăng ký để chọn hoạt động bạn muốn tham gia.
           </p>
-          <Link href="/">
-            <Button className="w-full bg-blue-600 hover:bg-blue-700">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Tiếp tục chọn hoạt động
-            </Button>
-          </Link>
-        </Card>
+          <Button
+            onClick={() => router.push("/events")}
+            className="mt-6 rounded-full bg-amber-400 px-6 py-2 text-sm font-semibold text-[#3b0008] hover:bg-amber-300"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Quay lại trang hoạt động
+          </Button>
+        </div>
       </div>
     )
   }
 
-  const distinctActivities = items.length
-
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <Link href="/">
-          <Button variant="ghost" className="mb-6">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Quay lại
+    <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              Giỏ hàng
+            </h1>
+            <p className="mt-1 text-sm text-amber-100/85">
+              Bạn đã chọn {totalItems} vé cho các hoạt động.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="rounded-full border-amber-200/60 bg-black/20 px-4 py-2 text-xs font-semibold text-amber-100 hover:bg-black/40 md:text-sm"
+            onClick={() => router.push("/events")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Tiếp tục chọn hoạt động
           </Button>
-        </Link>
+        </div>
 
-        <h1 className="text-3xl font-bold mb-8">Giỏ hàng của bạn</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Danh sách item */}
-          <div className="lg:col-span-2 space-y-4">
+        <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50">
+          <div className="border-b border-[#8b1c1f]/40 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-amber-200/90 md:px-6 md:text-sm">
+            Chi tiết giỏ hàng
+          </div>
+          <div className="divide-y divide-[#8b1c1f]/40">
             {items.map((item) => {
-              const lineTotal = item.unitPrice * item.quantity
+              const lineTotal = item.quantity * item.unitPrice
               return (
-                <Card key={`${item.activityId}-${item.pricingType}`} className="p-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-                    {/* Thông tin hoạt động */}
-                    <div>
-                      <h3 className="font-semibold text-lg">{item.title}</h3>
-                      <p className="text-sm text-gray-600">
-                        Hình thức:{" "}
-                        <span className="font-medium">
-                          {item.pricingType === "member"
-                            ? "Member"
-                            : "Non-member"}
-                        </span>
-                      </p>
-                    </div>
+                <div
+                  key={`${item.activityId}-${item.pricingType}`}
+                  className="grid gap-3 px-4 py-3 text-xs md:grid-cols-6 md:items-center md:px-6 md:py-4 md:text-sm"
+                >
+                  <div className="md:col-span-2">
+                    <p className="font-semibold text-amber-50">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-amber-200/85 md:text-xs">
+                      Hình thức:{" "}
+                      {item.pricingType === "member"
+                        ? "Member"
+                        : "Non-member"}
+                    </p>
+                  </div>
 
-                    {/* Số lượng */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-2">Số lượng</p>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            updateQuantity(
-                              item.activityId,
-                              item.pricingType,
-                              Math.max(1, item.quantity - 1)
-                            )
-                          }
-                        >
-                          −
-                        </Button>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateQuantity(
-                              item.activityId,
-                              item.pricingType,
-                              Number(e.target.value) || 1
-                            )
-                          }
-                          className="w-12 text-center"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            updateQuantity(
-                              item.activityId,
-                              item.pricingType,
-                              item.quantity + 1
-                            )
-                          }
-                        >
-                          +
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Giá */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Giá/Đơn vị</p>
-                      <p className="font-semibold">{formatVND(item.unitPrice)}</p>
-                      <p className="text-xs text-gray-500 mt-2 mb-1">Thành tiền</p>
-                      <p className="font-bold text-blue-600">
-                        {formatVND(lineTotal)}
-                      </p>
-                    </div>
-
-                    {/* Nút xóa */}
-                    <div className="flex justify-end">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-amber-200/85 md:hidden">
+                      Số lượng
+                    </span>
+                    <div className="inline-flex items-center rounded-full border border-amber-200/50 bg-black/20 px-2 py-1">
+                      <button
+                        type="button"
                         onClick={() =>
-                          removeItem(item.activityId, item.pricingType)
+                          updateQuantity(
+                            item.activityId,
+                            item.pricingType,
+                            Math.max(1, item.quantity - 1),
+                          )
                         }
+                        className="px-2 text-amber-100 hover:text-amber-300"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center text-sm font-semibold">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateQuantity(
+                            item.activityId,
+                            item.pricingType,
+                            item.quantity + 1,
+                          )
+                        }
+                        className="px-2 text-amber-100 hover:text-amber-300"
+                      >
+                        +
+                      </button>
                     </div>
                   </div>
-                </Card>
+
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-amber-200/85 md:hidden">
+                      Giá/Đơn vị
+                    </p>
+                    <p className="font-semibold text-amber-200">
+                      {formatVND(item.unitPrice)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="text-[11px] text-amber-200/85 md:hidden">
+                      Thành tiền
+                    </p>
+                    <p className="font-semibold text-amber-300">
+                      {formatVND(lineTotal)}
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.activityId, item.pricingType)}
+                      className="inline-flex items-center gap-1 rounded-full border border-red-500/60 bg-red-900/40 px-3 py-1 text-xs font-semibold text-red-200 hover:bg-red-900/70"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Xóa
+                    </button>
+                  </div>
+                </div>
               )
             })}
           </div>
+        </Card>
 
-          {/* Tóm tắt đơn hàng */}
-          <div className="lg:col-span-1">
-            <Card className="p-6 sticky top-4">
-              <h2 className="text-xl font-bold mb-4">Tóm tắt đơn hàng</h2>
+        <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+          <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50">
+            <div className="px-4 py-3 text-sm font-semibold text-amber-200 md:px-6">
+              Ghi chú cho ban tổ chức (tùy chọn)
+            </div>
+            <div className="px-4 pb-4 md:px-6">
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                className="mt-1 w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
+                placeholder="Ví dụ: Yêu cầu xuất hóa đơn, ghi chú đặc biệt..."
+              />
+            </div>
+          </Card>
 
-              <div className="space-y-3 mb-6 pb-4 border-b">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Số lượng sản phẩm</span>
-                  <span className="font-semibold">{totalItems}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Số hoạt động</span>
-                  <span className="font-semibold">{distinctActivities}</span>
-                </div>
+          <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50">
+            <div className="px-4 py-3 text-sm font-semibold text-amber-200 md:px-6">
+              Tổng thanh toán
+            </div>
+            <div className="space-y-3 px-4 py-3 text-sm md:px-6">
+              <div className="flex items-center justify-between">
+                <span className="text-amber-100/80">Tổng số vé</span>
+                <span className="font-semibold text-amber-200">
+                  {totalItems}
+                </span>
               </div>
-
-              <div className="mb-6 pb-6 border-b">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold">Tổng cộng</span>
-                  <span className="text-2xl font-bold text-blue-600">
-                    {formatVND(totalAmount)}
-                  </span>
-                </div>
+              <div className="flex items-center justify-between">
+                <span className="text-amber-100/80">Tạm tính</span>
+                <span className="text-base font-bold text-amber-300">
+                  {formatVND(totalAmount)}
+                </span>
               </div>
-
+              <p className="text-xs text-amber-200/80">
+                Phí thanh toán (nếu có) sẽ được hiển thị ở bước xác nhận.
+              </p>
               <Button
+                className="mt-1 w-full rounded-full bg-amber-400 px-4 py-2 text-sm font-semibold text-[#3b0008] hover:bg-amber-300"
                 onClick={() => router.push("/checkout")}
-                className="w-full bg-blue-600 hover:bg-blue-700 mb-3"
               >
                 Tiến hành thanh toán
               </Button>
-
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => router.push("/")}
-              >
-                Tiếp tục mua sắm
-              </Button>
-            </Card>
-          </div>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

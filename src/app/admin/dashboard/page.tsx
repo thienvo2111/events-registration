@@ -19,7 +19,6 @@ export default function AdminDashboardPage() {
     try {
       setLoading(true)
 
-      // Fetch orders with registrations
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select(
@@ -30,7 +29,7 @@ export default function AdminDashboardPage() {
           payment_status,
           created_at,
           registration:registrations(full_name)
-        `
+        `,
         )
         .order("created_at", { ascending: false })
 
@@ -40,7 +39,6 @@ export default function AdminDashboardPage() {
       const pendingOrders =
         orders?.filter((o: any) => o.payment_status === "pending")?.length ?? 0
 
-      // FIX: Map orders to DashboardOrder[] with proper type
       const recentOrders: DashboardOrder[] = (orders ?? [])
         .slice(0, 5)
         .map((order: any) => ({
@@ -66,83 +64,117 @@ export default function AdminDashboardPage() {
     }
   }
 
-  if (loading) return <div>Đang tải...</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#3b0008] px-4 py-10 text-amber-50 md:px-6">
+        <div className="mx-auto max-w-6xl text-center text-sm text-amber-100">
+          Đang tải dữ liệu dashboard...
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Dashboard Quản Lý</h1>
-      <p className="text-gray-600">
-        Thống kê tổng quan về đặt hàng và tham gia hoạt động.
-      </p>
+    <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
+      <div className="mx-auto max-w-6xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Dashboard Quản Lý
+          </h1>
+          <p className="mt-1 text-sm text-amber-100/85">
+            Thống kê tổng quan về đặt hàng và tham gia hoạt động.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label="Tổng đơn hàng" value={metrics?.totalOrders ?? 0} />
-        <StatCard label="Đơn chờ thanh toán" value={metrics?.pendingOrders ?? 0} />
-        <StatCard
-          label="Đơn hoàn thành"
-          value={(metrics?.totalOrders ?? 0) - (metrics?.pendingOrders ?? 0)}
-        />
-      </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <StatCard label="Tổng đơn hàng" value={metrics?.totalOrders ?? 0} />
+          <StatCard
+            label="Đơn chờ thanh toán"
+            value={metrics?.pendingOrders ?? 0}
+          />
+          <StatCard
+            label="Đơn hoàn thành"
+            value={(metrics?.totalOrders ?? 0) - (metrics?.pendingOrders ?? 0)}
+          />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Đơn hàng gần đây</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!metrics?.recentOrders || metrics.recentOrders.length === 0 ? (
-            <p className="text-gray-500">Chưa có đơn hàng nào.</p>
-          ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2">Mã đơn</th>
-                  <th className="text-left py-2">Người đặt</th>
-                  <th className="text-right py-2">Tổng tiền</th>
-                  <th className="text-center py-2">Trạng thái</th>
-                  <th className="text-left py-2">Ngày tạo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="py-2">{order.order_code}</td>
-                    <td className="py-2">{order.registration?.full_name ?? "—"}</td>
-                    <td className="py-2 text-right">
-                      {formatVND(order.total_amount || 0)}
-                    </td>
-                    <td className="py-2 text-center">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          order.payment_status === "completed"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
+        <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50">
+          <CardHeader>
+            <CardTitle className="text-amber-200">
+              Đơn hàng gần đây
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!metrics?.recentOrders || metrics.recentOrders.length === 0 ? (
+              <p className="text-sm text-amber-100/80">
+                Chưa có đơn hàng nào.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-xs md:text-sm">
+                  <thead>
+                    <tr className="border-b border-[#8b1c1f]/40 bg-black/20 text-amber-200">
+                      <th className="px-3 py-2 font-semibold">Mã đơn</th>
+                      <th className="px-3 py-2 font-semibold">Người đặt</th>
+                      <th className="px-3 py-2 font-semibold text-right">
+                        Tổng tiền
+                      </th>
+                      <th className="px-3 py-2 font-semibold text-center">
+                        Trạng thái
+                      </th>
+                      <th className="px-3 py-2 font-semibold">Ngày tạo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {metrics.recentOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className="border-b border-[#8b1c1f]/30 last:border-0"
                       >
-                        {order.payment_status === "completed"
-                          ? "Hoàn thành"
-                          : "Chờ"}
-                      </span>
-                    </td>
-                    <td className="py-2">
-                      {new Date(order.created_at).toLocaleString("vi-VN")}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </CardContent>
-      </Card>
+                        <td className="px-3 py-2 font-mono">
+                          {order.order_code}
+                        </td>
+                        <td className="px-3 py-2">
+                          {order.registration?.full_name ?? "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {formatVND(order.total_amount || 0)}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <span
+                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                              order.payment_status === "completed"
+                                ? "bg-green-500/20 text-green-300"
+                                : "bg-yellow-500/20 text-yellow-300"
+                            }`}
+                          >
+                            {order.payment_status === "completed"
+                              ? "Hoàn thành"
+                              : "Chờ"}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2">
+                          {new Date(order.created_at).toLocaleString("vi-VN")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <p className="text-gray-600 text-sm mb-2">{label}</p>
-        <p className="text-3xl font-bold">{value}</p>
+    <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50">
+      <CardContent className="pt-4">
+        <p className="mb-1 text-xs text-amber-200/80">{label}</p>
+        <p className="text-2xl font-bold">{value}</p>
       </CardContent>
     </Card>
   )

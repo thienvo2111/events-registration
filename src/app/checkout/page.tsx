@@ -1,7 +1,3 @@
-// ============================================================================
-// app/checkout/page.tsx - Checkout (Nhập thông tin & Xác nhận đơn)
-// ============================================================================
-
 "use client"
 
 import React, { useEffect, useState } from "react"
@@ -24,6 +20,10 @@ type CheckoutForm = {
   phone_number: string
   email?: string
   unit_id: string
+  title?: string
+  seat_req?: string
+  spec_req?: string
+  note?: string
 }
 
 interface OrderCreatedState {
@@ -54,9 +54,15 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
   } = useForm<CheckoutForm>({
     resolver: zodResolver(CheckoutSchema),
+    defaultValues: {
+      seat_req: "protocol",
+    },
   })
+
+  const seatReqValue = watch("seat_req")
 
   // Fetch units
   useEffect(() => {
@@ -67,33 +73,32 @@ export default function CheckoutPage() {
     fetchUnits()
   }, [])
 
-  // Nếu đã tạo đơn → hiển thị trang xác nhận (ưu tiên hơn check giỏ hàng)
+  // Nếu đã tạo đơn → trang xác nhận
   if (orderCreated) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <header className="border-b bg-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <h1 className="text-2xl font-bold text-slate-900">
+      <div className="min-h-screen bg-[#3b0008] text-amber-50">
+        <header className="border-b border-[#8b1c1f]/40 bg-[#2a0006]">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+            <h1 className="text-2xl font-bold text-amber-50">
               Xác nhận đăng ký
             </h1>
           </div>
         </header>
 
-        <main className="mx-auto max-w-2xl px-4 py-8">
-          <Card className="p-8 text-center">
-            <div className="mb-4 text-5xl">✓</div>
+        <main className="mx-auto max-w-2xl px-4 py-8 md:px-6">
+          <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-8 text-center text-amber-50">
+            <div className="mb-4 text-5xl text-green-400">✓</div>
             <h1 className="mb-2 text-2xl font-bold">
               Đăng ký của bạn đã được ghi nhận
             </h1>
-            <p className="mb-4 text-gray-600">
+            <p className="mb-4 text-sm text-amber-100/80">
               Mã đơn hàng:&nbsp;
               <span className="font-mono font-bold">
                 {orderCreated.order_code}
               </span>
             </p>
 
-            {/* Chi tiết các item trong đơn */}
-            <Card className="mb-6 bg-slate-50 p-4 text-left">
+            <Card className="mb-6 border-[#8b1c1f]/40 bg-[#3b0008]/60 p-4 text-left text-amber-50">
               <h2 className="mb-3 font-semibold">Chi tiết đơn hàng</h2>
               <div className="space-y-2 text-sm">
                 {orderCreated.items.map((item) => (
@@ -113,14 +118,13 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                 ))}
-                <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
+                <div className="mt-2 flex justify-between border-t border-[#8b1c1f]/40 pt-2 font-semibold">
                   <span>Tổng cộng</span>
                   <span>{formatVND(orderCreated.amount)}</span>
                 </div>
               </div>
             </Card>
 
-            {/* QR thanh toán */}
             {orderCreated.qr_url && (
               <div className="my-6 flex justify-center">
                 <img
@@ -131,7 +135,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            <Card className="mb-6 border-blue-200 bg-blue-50 p-4 text-left">
+            <Card className="mb-6 border-amber-200/40 bg-black/20 p-4 text-left text-amber-50">
               <h2 className="mb-3 font-semibold">Thông tin thanh toán</h2>
               <div className="space-y-2 text-sm">
                 <p>
@@ -159,7 +163,7 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
-            <p className="mb-4 text-sm text-gray-600">
+            <p className="mb-4 text-sm text-amber-100/80">
               Vui lòng lưu lại mã đơn hàng và mã QR. Bạn có thể thanh toán
               ngay hoặc chuyển khoản sau. Ban tổ chức sẽ xác nhận thanh toán
               và gửi thông tin tiếp theo qua email/SMS.
@@ -167,10 +171,15 @@ export default function CheckoutPage() {
 
             <div className="space-y-2">
               <Link href="/search">
-                <Button className="w-full">Tra cứu đơn hàng</Button>
+                <Button className="w-full rounded-full bg-amber-400 text-[#3b0008] hover:bg-amber-300">
+                  Tra cứu đơn hàng
+                </Button>
               </Link>
               <Link href="/events">
-                <Button variant="outline" className="w-full">
+                <Button
+                  variant="outline"
+                  className="w-full rounded-full border-amber-200/60 bg-black/20 text-amber-100 hover:bg-black/40"
+                >
                   Quay lại trang sự kiện
                 </Button>
               </Link>
@@ -181,26 +190,31 @@ export default function CheckoutPage() {
     )
   }
 
-  // Nếu chưa tạo đơn và giỏ hàng trống
+  // Nếu giỏ hàng trống
   if (state.items.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <header className="border-b bg-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-            <h1 className="text-2xl font-bold text-slate-900">
-              Thanh toán
-            </h1>
+      <div className="min-h-screen bg-[#3b0008] text-amber-50">
+        <header className="border-b border-[#8b1c1f]/40 bg-[#2a0006]">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+            <h1 className="text-2xl font-bold">Thanh toán</h1>
             <Link href="/events">
-              <Button variant="ghost">Quay lại mua sắm</Button>
+              <Button
+                variant="ghost"
+                className="text-amber-100 hover:bg-amber-100/10"
+              >
+                Quay lại mua sắm
+              </Button>
             </Link>
           </div>
         </header>
 
-        <main className="mx-auto max-w-5xl px-4 py-16">
-          <Card className="p-8 text-center">
-            <p className="mb-4 text-gray-600">Giỏ hàng trống</p>
+        <main className="mx-auto max-w-5xl px-4 py-16 md:px-6">
+          <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-8 text-center text-amber-50">
+            <p className="mb-4 text-sm text-amber-100/80">Giỏ hàng trống</p>
             <Link href="/events">
-              <Button>Quay lại mua sắm</Button>
+              <Button className="rounded-full bg-amber-400 text-[#3b0008] hover:bg-amber-300">
+                Quay lại mua sắm
+              </Button>
             </Link>
           </Card>
         </main>
@@ -212,17 +226,21 @@ export default function CheckoutPage() {
     try {
       setIsProcessing(true)
 
-      // 1. Create registration
+      // 1. Create registration (thêm 4 field mới)
       const { data: regData, error: regError } = await supabase
-        .from("registrations")
-        .insert({
-          full_name: data.full_name,
-          phone_number: data.phone_number,
-          email: data.email,
-          unit_id: data.unit_id,
-        })
-        .select()
-        .single()
+          .from("registrations")
+          .insert({
+            full_name: data.full_name,
+            phone_number: data.phone_number,
+            email: data.email,
+            unit_id: data.unit_id,
+            title: data.title,
+            seat_req: data.seat_req,
+            spec_req: data.spec_req,
+            note: data.note,
+          })
+          .select()
+          .single()
 
       if (regError) {
         console.error("REG ERROR:", regError)
@@ -254,8 +272,6 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         price_per_unit: item.unitPrice,
         subtotal: item.unitPrice * item.quantity,
-        // nếu bảng chưa có pricing_type thì bỏ dòng dưới:
-        // pricing_type: item.pricingType,
       }))
 
       const { error: itemsError } = await supabase
@@ -267,7 +283,7 @@ export default function CheckoutPage() {
         throw itemsError
       }
 
-      // 4. Create attendees
+      // 4. Create attendees (giữ unit + thêm thông tin đã lưu ở registrations)
       const attendees = state.items.map((item) => ({
         order_id: orderData.id,
         activity_id: item.activityId,
@@ -287,7 +303,7 @@ export default function CheckoutPage() {
         throw attendeesError
       }
 
-      // 5. Generate QR quicklink
+      // 5. Generate QR
       const qrData = createPaymentQuickLink(
         VIETQR_CONFIG.ADMIN_ACCOUNT.bank_code,
         VIETQR_CONFIG.ADMIN_ACCOUNT.account_number,
@@ -309,11 +325,11 @@ export default function CheckoutPage() {
         throw updateError
       }
 
-      // 7. Lưu trạng thái để hiển thị trang xác nhận
+      // 7. Lưu state để hiển thị trang xác nhận
       setOrderCreated({
         order_code: orderCode,
         qr_url: qrData.qr_url,
-        bank_code: qrData.bank_code,          // có giá trị
+        bank_code: qrData.bank_code,
         account_number: qrData.account_number,
         account_name: qrData.account_name,
         amount: state.totalAmount,
@@ -325,36 +341,35 @@ export default function CheckoutPage() {
       console.error("Checkout error:", error)
       alert(
         "Lỗi: " +
-          (error instanceof Error
-            ? error.message
-            : "Không thể tạo đơn hàng"),
+          (error instanceof Error ? error.message : "Không thể tạo đơn hàng"),
       )
     } finally {
       setIsProcessing(false)
     }
   }
 
-  // Form checkout (khi chưa tạo đơn)
+  // Form checkout
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <h1 className="text-2xl font-bold text-slate-900">
-            Thanh toán
-          </h1>
+    <div className="min-h-screen bg-[#3b0008] text-amber-50">
+      <header className="border-b border-[#8b1c1f]/40 bg-[#2a0006]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
+          <h1 className="text-2xl font-bold">Thanh toán</h1>
           <Link href="/cart">
-            <Button variant="ghost">Quay lại giỏ hàng</Button>
+            <Button
+              variant="ghost"
+              className="text-amber-100 hover:bg-amber-100/10"
+            >
+              Quay lại giỏ hàng
+            </Button>
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-8">
+      <main className="mx-auto max-w-2xl px-4 py-8 md:px-6">
         <div className="grid gap-8">
           {/* Tóm tắt đơn hàng */}
-          <Card className="p-6">
-            <h2 className="mb-4 text-lg font-bold">
-              Đơn hàng của bạn
-            </h2>
+          <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-6 text-amber-50">
+            <h2 className="mb-4 text-lg font-bold">Đơn hàng của bạn</h2>
             <div className="space-y-3 text-sm">
               {state.items.map((item) => (
                 <div
@@ -373,7 +388,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
               ))}
-              <div className="mt-3 flex justify-between border-t pt-3 text-lg font-bold">
+              <div className="mt-3 flex justify-between border-t border-[#8b1c1f]/40 pt-3 text-lg font-bold">
                 <span>Tổng cộng</span>
                 <span>{formatVND(state.totalAmount)}</span>
               </div>
@@ -382,63 +397,61 @@ export default function CheckoutPage() {
 
           {/* Form thông tin đăng ký */}
           <form onSubmit={handleSubmit(onSubmit)}>
-            <Card className="p-6">
-              <h2 className="mb-6 text-lg font-bold">
-                Thông tin đăng ký
-              </h2>
+            <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-6 text-amber-50">
+              <h2 className="mb-6 text-lg font-bold">Thông tin đăng ký</h2>
 
-              <div className="space-y-4">
+              <div className="space-y-4 text-sm">
                 <div>
-                  <label className="mb-1 block text-sm font-medium">
+                  <label className="mb-1 block font-medium">
                     Họ tên *
                   </label>
                   <input
                     {...register("full_name")}
-                    className="w-full rounded border px-3 py-2"
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
                     placeholder="Nhập họ tên"
                   />
                   {errors.full_name && (
-                    <p className="mt-1 text-sm text-red-600">
+                    <p className="mt-1 text-xs text-red-300">
                       {errors.full_name.message as string}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium">
+                  <label className="mb-1 block font-medium">
                     Số điện thoại *
                   </label>
                   <input
                     {...register("phone_number")}
-                    className="w-full rounded border px-3 py-2"
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
                     placeholder="Nhập số điện thoại"
                   />
                   {errors.phone_number && (
-                    <p className="mt-1 text-sm text-red-600">
+                    <p className="mt-1 text-xs text-red-300">
                       {errors.phone_number.message as string}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium">
+                  <label className="mb-1 block font-medium">
                     Email
                   </label>
                   <input
                     {...register("email")}
                     type="email"
-                    className="w-full rounded border px-3 py-2"
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
                     placeholder="Nhập email (tùy chọn)"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-sm font-medium">
-                    Đơn vị công tác *
+                  <label className="mb-1 block font-medium">
+                    Đơn vị công tác / Chapter *
                   </label>
                   <select
                     {...register("unit_id")}
-                    className="w-full rounded border px-3 py-2"
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 focus:border-amber-300 focus:outline-none"
                   >
                     <option value="">Chọn đơn vị</option>
                     {units.map((unit) => (
@@ -448,15 +461,82 @@ export default function CheckoutPage() {
                     ))}
                   </select>
                   {errors.unit_id && (
-                    <p className="mt-1 text-sm text-red-600">
+                    <p className="mt-1 text-xs text-red-300">
                       {errors.unit_id.message as string}
                     </p>
                   )}
                 </div>
 
+                <div>
+                  <label className="mb-1 block font-medium">
+                    Chức danh hiện tại
+                  </label>
+                  <input
+                    {...register("title")}
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
+                    placeholder="Ví dụ: Chủ tịch Chapter, Thành viên..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium">
+                    Anh/Chị ưu tiên chỗ ngồi của mình tại Đại Hội thế nào?
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        value="protocol"
+                        {...register("seat_req")}
+                        checked={seatReqValue === "protocol"}
+                        className="cursor-pointer"
+                      />
+                      <span>
+                        Ưu tiên ngồi theo vị trí Protocol do BTC sắp xếp
+                      </span>
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2">
+                      <input
+                        type="radio"
+                        value="chapter_table"
+                        {...register("seat_req")}
+                        checked={seatReqValue === "chapter_table"}
+                        className="cursor-pointer"
+                      />
+                      <span>
+                        Ưu tiên ngồi theo bàn của Chapter
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium">
+                    Có yêu cầu gì đặc biệt
+                  </label>
+                  <textarea
+                    {...register("spec_req")}
+                    rows={2}
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
+                    placeholder="Ví dụ: ăn chay, dị ứng, hỗ trợ di chuyển..."
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-1 block font-medium">
+                    Ghi chú
+                  </label>
+                  <textarea
+                    {...register("note")}
+                    rows={2}
+                    className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
+                    placeholder="Ghi chú thêm cho ban tổ chức..."
+                  />
+                </div>
+
                 <Button
                   type="submit"
-                  className="mt-6 w-full"
+                  className="mt-6 w-full rounded-full bg-amber-400 text-sm font-semibold text-[#3b0008] hover:bg-amber-300"
                   disabled={isProcessing}
                   size="lg"
                 >
