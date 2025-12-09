@@ -197,7 +197,7 @@ export default function EventsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            size="icon"
+                            size="sm"
                             className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "member", -1)
@@ -211,7 +211,7 @@ export default function EventsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            size="icon"
+                            size="sm"
                             className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "member", 1)
@@ -240,7 +240,7 @@ export default function EventsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            size="icon"
+                            size="sm"
                             className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "non_member", -1)
@@ -254,7 +254,7 @@ export default function EventsPage() {
                           <Button
                             type="button"
                             variant="outline"
-                            size="icon"
+                            size="sm"
                             className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "non_member", 1)
