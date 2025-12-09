@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next"
 import React from "react"
+import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { CartProvider } from "@/context/CartContext"
 
@@ -21,6 +22,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
         </CartProvider>
+        <Analytics />
       </body>
     </html>
   )
