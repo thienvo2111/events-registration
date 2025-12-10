@@ -113,8 +113,7 @@ export async function POST(req: Request) {
           </div>
 
           <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
-            Anh/Chị có thể thanh toán ngay hoặc chuyển khoản sau. Ban tổ chức sẽ xác nhận thanh toán
-            và gửi thông tin tiếp theo qua email.
+            Anh/Chị có thể thanh toán ngay hoặc chuyển khoản sau. Ban tổ chức sẽ gửi thông tin tiếp theo qua email.
           </p>
           <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
             Mọi chi tiết xin liên hệ:
