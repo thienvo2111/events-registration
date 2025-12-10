@@ -5,7 +5,7 @@ import ParticipantsContent from "./participants-content"
 
 export default function ParticipantsPage() {
   return (
-    <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
+    <div className="min-h-screen bg-[#600202] px-4 py-8 text-amber-50 md:px-6 md:py-10">
       <div className="mx-auto max-w-5xl space-y-6">
         <header className="text-center">
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
