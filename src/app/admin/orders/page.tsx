@@ -10,7 +10,7 @@ import { formatVND } from "@/lib/format"
 interface OrderDetail {
   id: string
   order_code: string
-  payment_status: "pending" | "completed" | "cancelled"
+  payment_status: "pending" | "paid" | "cancelled"
   total_amount: number
   created_at: string
   registration?: {
@@ -107,14 +107,14 @@ export default function AdminOrdersPage() {
     try {
       const { error: err } = await supabase
         .from("orders")
-        .update({ payment_status: "completed" })
+        .update({ payment_status: "paid" })
         .eq("id", orderId)
 
       if (err) throw err
 
       setOrders(
         orders.map((o) =>
-          o.id === orderId ? { ...o, payment_status: "completed" } : o,
+          o.id === orderId ? { ...o, payment_status: "paid" } : o,
         ),
       )
     } catch (err) {
@@ -183,14 +183,14 @@ export default function AdminOrdersPage() {
                     </div>
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        order.payment_status === "completed"
+                        order.payment_status === "paid"
                           ? "bg-green-500/20 text-green-300"
                           : order.payment_status === "cancelled"
                           ? "bg-red-500/20 text-red-200"
                           : "bg-yellow-500/20 text-yellow-300"
                       }`}
                     >
-                      {order.payment_status === "completed"
+                      {order.payment_status === "paid"
                         ? "Hoàn thành"
                         : order.payment_status === "cancelled"
                         ? "Hủy"

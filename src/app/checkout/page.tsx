@@ -467,7 +467,7 @@ export default function CheckoutPage() {
 
                 <div>
                   <label className="mb-1 block font-medium">
-                    Email
+                    Email *
                   </label>
                   <input
                     {...register("email")}

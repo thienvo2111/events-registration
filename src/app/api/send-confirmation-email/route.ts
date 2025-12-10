@@ -103,7 +103,16 @@ export async function POST(req: Request) {
 
           <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
             Anh/Chị có thể thanh toán ngay hoặc chuyển khoản sau. Ban tổ chức sẽ xác nhận thanh toán
-            và gửi thông tin tiếp theo qua email/SMS.
+            và gửi thông tin tiếp theo qua email.
+          </p>
+          <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
+            Mọi chi tiết xin liên hệ:
+          </p>
+          <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
+            - Giám đốc sự kiện: Chị Chiêu An - 0933 066 070
+          </p>
+          <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
+            - Phụ trách khách mời: Chị Quỳnh Trang - 0842 656 759
           </p>
         </div>
       </div>
@@ -113,7 +122,7 @@ export async function POST(req: Request) {
     await transporter.sendMail({
       from: process.env.NEXT_PUBLIC_SMTP_FROM,
       to,
-      subject: `Xác nhận đăng ký – Mã đơn ${order.order_code}`,
+      subject: `2026 JCI Vietnam New Year Convention – ${order.order_code}`,
       html,
     })
 
