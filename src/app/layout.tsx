@@ -69,8 +69,7 @@ function SiteFooter() {
     <footer className="border-t border-[#8b1c1f]/40 bg-[#2a0006]">
       <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-amber-100/80 md:flex-row md:items-center md:justify-between md:px-6">
         <p>
-          © {new Date().getFullYear()} JCI Vietnam New Year Convention. All
-          rights reserved.
+          © 2026 JCI Vietnam New Year Convention. All rights reserved.
         </p>
         <p className="text-[11px]">
           Designed for multi-device: desktop, tablet, mobile.

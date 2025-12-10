@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-const TARGET = new Date("2026-01-10T00:00:00+07:00").getTime()
+const TARGET = new Date("2026-01-09T00:00:00+07:00").getTime()
 
 function format(num: number) {
   return num.toString().padStart(2, "0")

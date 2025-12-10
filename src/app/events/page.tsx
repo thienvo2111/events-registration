@@ -130,7 +130,7 @@ export default function EventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
+    <div className="min-h-screen bg-[#600202] px-4 py-8 text-amber-50 md:px-6 md:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 flex flex-col items-start justify-between gap-4 md:mb-10 md:flex-row md:items-center">
           <div>
@@ -161,7 +161,7 @@ export default function EventsPage() {
                   {activity.title}
                 </CardTitle>
                 {activity.description && (
-                  <div className="max-h-32 overflow-y-auto rounded-md bg-black/20 p-2 text-xs leading-relaxed text-amber-100/90 md:text-sm scrollbar-thin">
+                  <div className="max-h-32 overflow-y-auto rounded-md bg-black/20 p-2 text-xs leading-relaxed text-amber-100/50 md:text-sm scrollbar-thin">
                     {activity.description}
                   </div>
                 )}

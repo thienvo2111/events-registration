@@ -59,8 +59,8 @@ export async function POST(req: Request) {
     }).format(order.amount)
 
     const html = `
-      <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#3b0008;padding:24px;color:#fef3c7;">
-        <div style="max-width:640px;margin:0 auto;background:#2a0006;border-radius:16px;padding:24px;">
+      <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#600202;padding:24px;color:#fef3c7;">
+        <div style="max-width:640px;margin:0 auto;background:#600202;border-radius:16px;padding:24px;">
           <h1 style="text-align:center;font-size:22px;font-weight:700;margin:0 0 8px;">XIN CẢM ƠN ANH/CHỊ.</h1>
           <p style="text-align:center;margin:0 0 16px;">Đăng ký của Anh/Chị đã được ghi nhận</p>
           <p style="text-align:center;margin:0 0 24px;">
