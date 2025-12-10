@@ -2,12 +2,12 @@ import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
+  host: process.env.NEXT_PUBLIC_SMTP_HOST,
+  port: Number(process.env.NEXT_PUBLIC_SMTP_PORT || 587),
   secure: false, // TLS STARTTLS
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: process.env.NEXT_PUBLIC_SMTP_USER,
+    pass: process.env.NEXT_PUBLIC_SMTP_PASS,
   },
 })
 
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     console.log(transporter)
 
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: process.env.NEXT_PUBLIC_SMTP_FROM,
       to,
       subject: `Xác nhận đăng ký – Mã đơn ${order.order_code}`,
       html,
