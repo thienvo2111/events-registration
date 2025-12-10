@@ -36,7 +36,11 @@ function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-[#8b1c1f]/40 bg-[#3b0008]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <span className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500" />
+          <img
+                  src="images/LOGO.png"
+                  alt="Logo NYC2026"
+                  className="h-8 w-12"
+                />
           <span className="text-sm font-semibold tracking-wide md:text-base">
             2026 JCI VIETNAM NEW YEAR CONVENTION
           </span>
