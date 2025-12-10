@@ -89,7 +89,10 @@ export default function CheckoutPage() {
           <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-8 text-center text-amber-50">
             <div className="mb-4 text-5xl text-green-400">✓</div>
             <h1 className="mb-2 text-2xl font-bold">
-              Đăng ký của bạn đã được ghi nhận
+              XIN CÁM ƠN ANH/CHỊ.
+            </h1>
+            <h1 className="mb-2 text-2xl font-bold">
+              Đăng ký của Anh/Chị đã được ghi nhận
             </h1>
             <p className="mb-4 text-sm text-amber-100/80">
               Mã đơn hàng:&nbsp;
@@ -125,6 +128,9 @@ export default function CheckoutPage() {
               </div>
             </Card>
 
+            <h1 className="mb-2 text-2xl font-bold">
+              Vui lòng quét mã QR dưới đây để thanh toán.
+            </h1>
             {orderCreated.qr_url && (
               <div className="my-6 flex justify-center">
                 <img
@@ -164,9 +170,9 @@ export default function CheckoutPage() {
             </Card>
 
             <p className="mb-4 text-sm text-amber-100/80">
-              Vui lòng lưu lại mã đơn hàng và mã QR. Bạn có thể thanh toán
+              Anh, Chị có thể thanh toán
               ngay hoặc chuyển khoản sau. Ban tổ chức sẽ xác nhận thanh toán
-              và gửi thông tin tiếp theo qua email/SMS.
+              và gửi thông tin tiếp theo qua email.
             </p>
 
             <div className="space-y-2">
@@ -350,7 +356,7 @@ export default function CheckoutPage() {
 
   // Form checkout
   return (
-    <div className="min-h-screen bg-[#3b0008] text-amber-50">
+    <div className="min-h-screen bg-[#600202] text-amber-50">
       <header className="border-b border-[#8b1c1f]/40 bg-[#2a0006]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-6">
           <h1 className="text-2xl font-bold">Thanh toán</h1>
@@ -369,7 +375,7 @@ export default function CheckoutPage() {
         <div className="grid gap-8">
           {/* Tóm tắt đơn hàng */}
           <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90 p-6 text-amber-50">
-            <h2 className="mb-4 text-lg font-bold">Đơn hàng của bạn</h2>
+            <h2 className="mb-4 text-lg font-bold">Đơn hàng của Anh/Chị</h2>
             <div className="space-y-3 text-sm">
               {state.items.map((item) => (
                 <div
@@ -480,7 +486,7 @@ export default function CheckoutPage() {
 
                 <div>
                   <label className="mb-1 block font-medium">
-                    Anh/Chị ưu tiên chỗ ngồi của mình tại Đại Hội thế nào?
+                    Anh, Chị ưu tiên chỗ ngồi của mình tại Đại Hội thế nào?
                   </label>
                   <div className="space-y-2">
                     <label className="flex cursor-pointer items-center gap-2">
