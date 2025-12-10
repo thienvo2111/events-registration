@@ -11,7 +11,10 @@ export const CheckoutSchema = z.object({
     (val) => isValidPhoneNumber(val),
     'Số điện thoại không hợp lệ'
   ),
-  email: z.string().email('Email không hợp lệ').optional().or(z.literal('')),
+email: z
+  .string()
+  .min(1, 'Vui lòng nhập email')
+  .email('Email không hợp lệ'),
   unit_id: z.string().uuid('Chọn đơn vị công tác'),
   title: z.string().optional(),                          // chức danh
   seat_req: z.enum(['protocol', 'chapter_table']).optional(), // ưu tiên chỗ ngồi
