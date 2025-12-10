@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server"
 import nodemailer from "nodemailer"
 
+console.log("SMTP CONFIG", {
+  host: process.env.NEXT_PUBLIC_SMTP_HOST,
+  port: process.env.NEXT_PUBLIC_SMTP_PORT,
+  user: process.env.NEXT_PUBLIC_SMTP_USER,
+  from: process.env.NEXT_PUBLIC_SMTP_FROM,
+})
+
 const transporter = nodemailer.createTransport({
   host: process.env.NEXT_PUBLIC_SMTP_HOST,
   port: Number(process.env.NEXT_PUBLIC_SMTP_PORT || 587),
-  secure: false, // TLS STARTTLS
+  secure: false,
   auth: {
     user: process.env.NEXT_PUBLIC_SMTP_USER,
     pass: process.env.NEXT_PUBLIC_SMTP_PASS,
@@ -40,8 +47,8 @@ export async function POST(req: Request) {
         <tr>
           <td style="padding:4px 0;">
             ${item.title} x ${item.quantity} (${
-          item.pricingType === "member" ? "Member" : "Non-member"
-        })
+              item.pricingType === "member" ? "Member" : "Non-member"
+            })
           </td>
           <td style="padding:4px 0; text-align:right;">
             ${Intl.NumberFormat("vi-VN", {
@@ -57,6 +64,10 @@ export async function POST(req: Request) {
       style: "currency",
       currency: "VND",
     }).format(order.amount)
+
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      "https://events-registration-delta.vercel.app"
 
     const html = `
       <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#600202;padding:24px;color:#fef3c7;">
@@ -86,7 +97,7 @@ export async function POST(req: Request) {
               ? `<div style="text-align:center;margin-bottom:24px;">
                   <p style="margin-bottom:8px;font-weight:600;">Vui lòng quét mã QR dưới đây để thanh toán.</p>
                   <img src="${order.qr_url}" alt="QR thanh toán" style="width:240px;height:240px;border-radius:12px;background:#ffffff;padding:8px;"/>
-                 </div>`
+                </div>`
               : ""
           }
 
@@ -114,10 +125,33 @@ export async function POST(req: Request) {
           <p style="font-size:13px;line-height:1.5;margin-bottom:0;">
             - Phụ trách khách mời: Chị Quỳnh Trang - 0842 656 759
           </p>
+
+          <p style="text-align:center;margin-top:16px;">
+            <a
+              href="${appUrl}/search"
+              style="
+                display:inline-block;
+                background:#f59e0b;
+                color:#111827;
+                padding:10px 18px;
+                border-radius:999px;
+                font-size:14px;
+                font-weight:600;
+                text-decoration:none;
+              "
+            >
+              Anh/Chị bấm vào đây để tra cứu đơn hàng
+            </a>
+          </p>
         </div>
       </div>
     `
-    console.log(transporter)
+    try {
+    await transporter.verify()
+    console.log("SMTP connection OK")
+    } catch (e) {
+    console.error("SMTP verify error:", e)
+    }
 
     await transporter.sendMail({
       from: process.env.NEXT_PUBLIC_SMTP_FROM,
