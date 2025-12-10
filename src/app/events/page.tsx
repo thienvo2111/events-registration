@@ -198,7 +198,7 @@ export default function EventsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
+                            className="h-10 w-10 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "member", -1)
                             }
@@ -212,7 +212,7 @@ export default function EventsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
+                            className="h-10 w-10 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "member", 1)
                             }
@@ -241,7 +241,7 @@ export default function EventsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
+                            className="h-10 w-10 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "non_member", -1)
                             }
@@ -255,7 +255,7 @@ export default function EventsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-7 w-7 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
+                            className="h-10 w-10 rounded-full border-amber-200/60 bg-black/30 text-amber-50 hover:bg-black/50"
                             onClick={() =>
                               handleChangeQuantity(activity.id, "non_member", 1)
                             }

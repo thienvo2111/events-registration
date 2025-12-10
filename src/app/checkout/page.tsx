@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-
 import { useCart } from "@/context/CartContext"
 import { supabase } from "@/lib/supabase"
 import { CheckoutSchema, type CheckoutFormInput } from "@/lib/validations"
@@ -18,7 +17,7 @@ import { Loader2 } from "lucide-react"
 type CheckoutForm = {
   full_name: string
   phone_number: string
-  email?: string
+  email: string
   unit_id: string
   title?: string
   seat_req?: string
@@ -145,8 +144,7 @@ export default function CheckoutPage() {
               <h2 className="mb-3 font-semibold">Thông tin thanh toán</h2>
               <div className="space-y-2 text-sm">
                 <p>
-                  <span className="font-semibold">Ngân hàng:</span>{" "}
-                  {orderCreated.bank_code}
+                  <span className="font-semibold">Ngân hàng: Vietcombank</span>{" "}
                 </p>
                 <p>
                   <span className="font-semibold">Tài khoản:</span>{" "}
@@ -342,6 +340,34 @@ export default function CheckoutPage() {
         items: state.items,
       })
 
+      // 8. Gửi email xác nhận (nếu có email)
+      if (data.email) {
+        try {
+          await fetch("/api/send-confirmation-email", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: data.email,
+              full_name: data.full_name,
+              order: {
+                order_code: orderCode,
+                amount: state.totalAmount,
+                qr_url: qrData.qr_url,
+                bank_code: qrData.bank_code,
+                account_number: qrData.account_number,
+                account_name: qrData.account_name,
+                items: state.items,
+              },
+            }),
+          })
+        } catch (e) {
+          console.error("Send email error:", e)
+          // không chặn flow nếu gửi mail lỗi
+        }
+      }
+
       clearCart()
     } catch (error) {
       console.error("Checkout error:", error)
@@ -447,8 +473,13 @@ export default function CheckoutPage() {
                     {...register("email")}
                     type="email"
                     className="w-full rounded-md border border-amber-200/40 bg-black/30 px-3 py-2 text-sm text-amber-50 placeholder:text-amber-200/60 focus:border-amber-300 focus:outline-none"
-                    placeholder="Nhập email (tùy chọn)"
+                    placeholder="Nhập email"
                   />
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-red-300">
+                      {errors.email.message as string}
+                    </p>
+                  )}
                 </div>
 
                 <div>
