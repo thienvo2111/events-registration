@@ -12,7 +12,7 @@ export const formatDate = (date: string): string => {
 export const generateOrderCode = (): string => {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '')
   const random = String(Math.floor(Math.random() * 10000)).padStart(4, '0')
-  return `ORD${date}${random}`
+  return `NYC26${date}${random}`
 }
 
 export function cn(...classes: Array<string | false | null | undefined>) {
