@@ -6,7 +6,6 @@ import { PropsWithChildren } from "react"
 import { Button } from "@/components/ui/button"
 import { createSupabaseClient } from "@/utils/supabase/client"
 
-
 export default function AdminLayout({ children }: PropsWithChildren) {
   const router = useRouter()
   const pathname = usePathname()

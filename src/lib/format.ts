@@ -7,11 +7,11 @@ export function formatVND(amount: number): string {
   }).format(amount)
 }
 
-export function generateOrderCode(): string {
-  const timestamp = Date.now().toString(36).toUpperCase()
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase()
-  return `ORD-${timestamp}-${random}`
-}
+// export function generateOrderCode(): string {
+//   const timestamp = Date.now().toString(36).toUpperCase()
+//   const random = Math.random().toString(36).substring(2, 8).toUpperCase()
+//   return `ORD-${timestamp}-${random}`
+// }
 
 export function formatDate(date: string | Date): string {
   return new Date(date).toLocaleDateString('vi-VN', {

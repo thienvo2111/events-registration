@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 import type { Metadata } from "next"
 import React from "react"
+import Image from "next/image"
 import "./globals.css"
 import { CartProvider } from "@/context/CartContext"
 import Link from "next/link"
@@ -36,11 +37,14 @@ function SiteHeader() {
     <header className="sticky top-0 z-30 border-b border-[#8b1c1f]/40 bg-[#3b0008]/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <img
-                  src="images/LOGO.png"
-                  alt="Logo NYC2026"
-                  className="h-8 w-12"
-                />
+          <Image
+            src="/images/logo.png"
+            alt="Logo NYC2026"
+            width={48}
+            height={32}
+            priority
+            className="h-8 w-12"
+          />
           <span className="text-sm font-semibold tracking-wide md:text-base">
             2026 JCI VIETNAM NEW YEAR CONVENTION
           </span>
