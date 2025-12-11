@@ -14,6 +14,8 @@ export interface Registration {
   unit_id: string | null;
   created_at: string;
   updated_at: string;
+  spec_req?: string;        // Yêu cầu đặc biệt
+  note?: string;            // Ghi chú
 }
 
 export interface Unit {
@@ -65,7 +67,7 @@ export interface Order {
   order_code: string;
   registration_id: string;
   total_amount: number;
-  payment_status: 'pending' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'cancelled';
   qr_code_string?: string;
   qr_code_url?: string;
   notes?: string;
@@ -103,7 +105,7 @@ export interface OrderSummary {
   phone_number: string;
   unit_name?: string;
   total_amount: number;
-  payment_status: 'pending' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'cancelled';
   item_count: number;
   created_at: string;
 }
@@ -126,10 +128,12 @@ export interface DashboardOrder {
   id: string;
   order_code: string;
   total_amount: number;
-  payment_status: 'pending' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'cancelled';
   created_at: string;
   registration?: {
     full_name: string;
+    spec_req: string;
+    note: string;
   } | null;
 }
 
@@ -220,7 +224,7 @@ export interface OrderSearchResult {
   full_name: string;
   phone_number: string;
   total_amount: number;
-  payment_status: 'pending' | 'completed' | 'cancelled';
+  payment_status: 'pending' | 'paid' | 'cancelled';
   created_at: string;
   item_count: number;
   items?: {

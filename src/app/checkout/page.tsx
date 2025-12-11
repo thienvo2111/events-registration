@@ -169,8 +169,7 @@ export default function CheckoutPage() {
 
             <p className="mb-4 text-sm text-amber-100/80">
               Anh, Chị có thể thanh toán
-              ngay hoặc chuyển khoản sau. Ban tổ chức sẽ xác nhận thanh toán
-              và gửi thông tin tiếp theo qua email. Anh/Chị vui lòng kiểm tra tình trạng của đơn hàng tại https://bit.ly/jcivn-nyc26-search
+              ngay hoặc chuyển khoản sau. Ban tổ chức sẽ gửi thông tin tiếp theo qua email. Anh/Chị vui lòng kiểm tra tình trạng của đơn hàng tại https://bit.ly/jcivn-nyc26-search
             </p>
 
             <div className="space-y-2">
@@ -276,6 +275,7 @@ export default function CheckoutPage() {
         quantity: item.quantity,
         price_per_unit: item.unitPrice,
         subtotal: item.unitPrice * item.quantity,
+        pricing_type: item.pricingType,
       }))
 
       const { error: itemsError } = await supabase

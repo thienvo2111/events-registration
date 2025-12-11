@@ -29,9 +29,9 @@ export default function AdminLayout({ children }: PropsWithChildren) {
           <AdminLink href="/admin/dashboard" active={isActive("/admin/dashboard")}>
             Dashboard
           </AdminLink>
-          <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
+          {/* <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
             Hoạt động
-          </AdminLink>
+          </AdminLink> */}
           <AdminLink href="/admin/orders" active={isActive("/admin/orders")}>
             Đơn hàng
           </AdminLink>

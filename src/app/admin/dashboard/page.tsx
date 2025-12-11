@@ -28,7 +28,7 @@ export default function AdminDashboardPage() {
           total_amount,
           payment_status,
           created_at,
-          registration:registrations(full_name)
+          registration:registrations(id,full_name,spec_req,note)
         `,
         )
         .order("created_at", { ascending: false })
@@ -40,16 +40,14 @@ export default function AdminDashboardPage() {
         orders?.filter((o: any) => o.payment_status === "pending")?.length ?? 0
 
       const recentOrders: DashboardOrder[] = (orders ?? [])
-        .slice(0, 5)
+        .slice(0, 400)
         .map((order: any) => ({
           id: order.id,
           order_code: order.order_code,
           total_amount: order.total_amount,
           payment_status: order.payment_status,
           created_at: order.created_at,
-          registration: Array.isArray(order.registration)
-            ? order.registration[0] ?? null
-            : order.registration,
+          registration: order.registration ?? null,
         }))
 
       setMetrics({
@@ -122,7 +120,9 @@ export default function AdminDashboardPage() {
                       <th className="px-3 py-2 font-semibold text-center">
                         Trạng thái
                       </th>
+                      <th className="px-3 py-2 font-semibold">Yêu cầu đặc biệt</th>
                       <th className="px-3 py-2 font-semibold">Ngày tạo</th>
+                      <th className="px-3 py-2 font-semibold">Ghi chú</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -143,18 +143,24 @@ export default function AdminDashboardPage() {
                         <td className="px-3 py-2 text-center">
                           <span
                             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                              order.payment_status === "completed"
+                              order.payment_status === "paid"
                                 ? "bg-green-500/20 text-green-300"
                                 : "bg-yellow-500/20 text-yellow-300"
                             }`}
                           >
-                            {order.payment_status === "completed"
+                            {order.payment_status === "paid"
                               ? "Hoàn thành"
                               : "Chờ"}
                           </span>
                         </td>
                         <td className="px-3 py-2">
+                          {order.registration?.spec_req ?? "—"}
+                        </td>
+                        <td className="px-3 py-2">
                           {new Date(order.created_at).toLocaleString("vi-VN")}
+                        </td>
+                        <td className="px-3 py-2">
+                          {order.registration?.note ?? "—"}
                         </td>
                       </tr>
                     ))}
