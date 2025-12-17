@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { formatVND } from "@/lib/format"
 
+type PaymentStatus = "pending" | "paid" | "cancelled"
+
 interface OrderDetail {
   id: string
   order_code: string
-  payment_status: "pending" | "paid" | "cancelled"
+  payment_status: PaymentStatus
   total_amount: number
   created_at: string
   registration?: {
@@ -37,25 +39,14 @@ interface OrderDetail {
 export default function AdminOrdersPage() {
   const supabase = createSupabaseClient()
   const [orders, setOrders] = useState<OrderDetail[]>([])
-  const [filteredOrders, setFilteredOrders] = useState<OrderDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
+  const [activeTab, setActiveTab] = useState<PaymentStatus>("pending")
 
   useEffect(() => {
     loadOrders()
   }, [])
-
-  useEffect(() => {
-    const filtered = orders.filter(
-      (order) =>
-        order.order_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.registration?.full_name
-          .toLowerCase()
-          .includes(searchQuery.toLowerCase()),
-    )
-    setFilteredOrders(filtered)
-  }, [searchQuery, orders])
 
   async function loadOrders() {
     try {
@@ -112,8 +103,8 @@ export default function AdminOrdersPage() {
 
       if (err) throw err
 
-      setOrders(
-        orders.map((o) =>
+      setOrders((prev) =>
+        prev.map((o) =>
           o.id === orderId ? { ...o, payment_status: "paid" } : o,
         ),
       )
@@ -122,7 +113,36 @@ export default function AdminOrdersPage() {
     }
   }
 
-  if (loading)
+  async function cancelOrder(orderId: string) {
+    try {
+      const { error: err } = await supabase
+        .from("orders")
+        .update({ payment_status: "cancelled" })
+        .eq("id", orderId)
+
+      if (err) throw err
+
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId ? { ...o, payment_status: "cancelled" } : o,
+        ),
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi hủy đơn hàng")
+    }
+  }
+
+  const filteredOrders = orders.filter((order) => {
+    if (order.payment_status !== activeTab) return false
+    if (!searchQuery) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      order.order_code.toLowerCase().includes(q) ||
+      order.registration?.full_name.toLowerCase().includes(q)
+    )
+  })
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#3b0008] px-4 py-10 text-amber-50 md:px-6">
         <div className="mx-auto max-w-6xl text-center text-sm text-amber-100">
@@ -130,6 +150,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
     )
+  }
 
   return (
     <div className="min-h-screen bg-[#3b0008] px-4 py-8 text-amber-50 md:px-6 md:py-10">
@@ -139,7 +160,7 @@ export default function AdminOrdersPage() {
             Quản lý đơn hàng
           </h1>
           <p className="mt-1 text-sm text-amber-100/85">
-            Xem, tìm kiếm và xác nhận thanh toán cho các đơn hàng
+            Xem, tìm kiếm và quản lý trạng thái các đơn hàng
           </p>
         </div>
 
@@ -149,7 +170,42 @@ export default function AdminOrdersPage() {
           </div>
         )}
 
-        <div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          {/* Tabs */}
+          <div className="inline-flex rounded-full border border-amber-300/40 bg-black/20 p-1 text-xs md:text-sm">
+            <button
+              onClick={() => setActiveTab("pending")}
+              className={`rounded-full px-3 py-1.5 md:px-4 ${
+                activeTab === "pending"
+                  ? "bg-amber-300 text-[#3b0008] font-semibold"
+                  : "text-amber-100/80"
+              }`}
+            >
+              Chờ thanh toán
+            </button>
+            <button
+              onClick={() => setActiveTab("paid")}
+              className={`rounded-full px-3 py-1.5 md:px-4 ${
+                activeTab === "paid"
+                  ? "bg-amber-300 text-[#3b0008] font-semibold"
+                  : "text-amber-100/80"
+              }`}
+            >
+              Đã hoàn thành
+            </button>
+            <button
+              onClick={() => setActiveTab("cancelled")}
+              className={`rounded-full px-3 py-1.5 md:px-4 ${
+                activeTab === "cancelled"
+                  ? "bg-amber-300 text-[#3b0008] font-semibold"
+                  : "text-amber-100/80"
+              }`}
+            >
+              Đã hủy
+            </button>
+          </div>
+
+          {/* Search */}
           <Input
             placeholder="Tìm theo mã đơn hoặc tên khách hàng..."
             value={searchQuery}
@@ -158,10 +214,13 @@ export default function AdminOrdersPage() {
           />
         </div>
 
+        {/* Danh sách đơn theo tab */}
         {filteredOrders.length === 0 ? (
           <Card className="border-[#8b1c1f]/50 bg-[#2a0006]/90">
             <CardContent className="pt-6 text-center text-sm text-amber-100/80">
-              Chưa có đơn hàng nào
+              {activeTab === "pending" && "Không có đơn chờ thanh toán"}
+              {activeTab === "paid" && "Không có đơn đã hoàn thành"}
+              {activeTab === "cancelled" && "Không có đơn đã hủy"}
             </CardContent>
           </Card>
         ) : (
@@ -198,7 +257,9 @@ export default function AdminOrdersPage() {
                     </span>
                   </div>
                 </CardHeader>
+
                 <CardContent>
+                  {/* Thông tin chung */}
                   <div className="mb-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                     <div>
                       <p className="text-xs text-amber-200/80">Người đặt</p>
@@ -232,6 +293,7 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Chi tiết hoạt động */}
                   {order.order_items && order.order_items.length > 0 && (
                     <div className="mb-4 border-t border-[#8b1c1f]/40 pb-4 pt-3">
                       <p className="mb-2 text-sm font-semibold">
@@ -254,7 +316,9 @@ export default function AdminOrdersPage() {
                               )}
                             </span>
                             <span>
-                              {formatVND(item.price_per_unit * item.quantity)}
+                              {formatVND(
+                                item.price_per_unit * item.quantity,
+                              )}
                             </span>
                           </li>
                         ))}
@@ -262,13 +326,24 @@ export default function AdminOrdersPage() {
                     </div>
                   )}
 
-                  {order.payment_status === "pending" && (
-                    <Button
-                      onClick={() => confirmPayment(order.id)}
-                      className="bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600"
-                    >
-                      Xác nhận thanh toán
-                    </Button>
+                  {/* Action buttons: chỉ hiện ở tab Chờ thanh toán */}
+                  {activeTab === "pending" && (
+                    <div className="mt-3 flex gap-3">
+                      <Button
+                        onClick={() => confirmPayment(order.id)}
+                        className="bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600"
+                      >
+                        Xác nhận thanh toán
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => cancelOrder(order.id)}
+                        className="border-red-500/70 bg-transparent px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-900/40"
+                      >
+                        Hủy đơn hàng
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
