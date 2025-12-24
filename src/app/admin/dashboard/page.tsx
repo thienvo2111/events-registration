@@ -6,6 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatVND } from "@/lib/format"
 import type { DashboardOrder, DashboardMetrics } from "@/lib/types"
 
+// Định nghĩa cấu hình hiển thị trạng thái
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  paid: {
+    label: "Hoàn thành",
+    className: "bg-green-500/20 text-green-300",
+  },
+  pending: {
+    label: "Chưa thanh toán",
+    className: "bg-yellow-500/20 text-yellow-300",
+  },
+  cancelled: {
+    label: "Hủy",
+    className: "bg-red-500/20 text-red-300",
+  },
+}
+
 export default function AdminDashboardPage() {
   const supabase = createSupabaseClient()
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
@@ -126,44 +142,43 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {metrics.recentOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="border-b border-[#8b1c1f]/30 last:border-0"
-                      >
-                        <td className="px-3 py-2 font-mono">
-                          {order.order_code}
-                        </td>
-                        <td className="px-3 py-2">
-                          {order.registration?.full_name ?? "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          {formatVND(order.total_amount || 0)}
-                        </td>
-                        <td className="px-3 py-2 text-center">
-                          <span
-                            className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                              order.payment_status === "paid"
-                                ? "bg-green-500/20 text-green-300"
-                                : "bg-yellow-500/20 text-yellow-300"
-                            }`}
-                          >
-                            {order.payment_status === "paid"
-                              ? "Hoàn thành"
-                              : "Chờ"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          {order.registration?.spec_req ?? "—"}
-                        </td>
-                        <td className="px-3 py-2">
-                          {new Date(order.created_at).toLocaleString("vi-VN")}
-                        </td>
-                        <td className="px-3 py-2">
-                          {order.registration?.note ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
+                    {metrics.recentOrders.map((order) => {
+                      // Lấy config hiển thị dựa trên trạng thái, fallback về pending nếu không khớp
+                      const statusInfo = STATUS_CONFIG[order.payment_status] || STATUS_CONFIG.pending;
+
+                      return (
+                        <tr
+                          key={order.id}
+                          className="border-b border-[#8b1c1f]/30 last:border-0"
+                        >
+                          <td className="px-3 py-2 font-mono">
+                            {order.order_code}
+                          </td>
+                          <td className="px-3 py-2">
+                            {order.registration?.full_name ?? "—"}
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            {formatVND(order.total_amount || 0)}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span
+                              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.className}`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">
+                            {order.registration?.spec_req ?? "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            {new Date(order.created_at).toLocaleString("vi-VN")}
+                          </td>
+                          <td className="px-3 py-2">
+                            {order.registration?.note ?? "—"}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

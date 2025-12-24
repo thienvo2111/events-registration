@@ -34,6 +34,9 @@ export default function AdminLayout({ children }: PropsWithChildren) {
           <AdminLink href="/admin/orders" active={isActive("/admin/orders")}>
             Đơn hàng
           </AdminLink>
+          <AdminLink href="/admin/statistics/units" active={isActive("/admin/statistics/units")}>
+            Thống kê theo Chapter
+          </AdminLink>
         </nav>
         <div className="p-4 border-t border-slate-200">
           <Button

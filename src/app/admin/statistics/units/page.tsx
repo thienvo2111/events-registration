@@ -164,9 +164,6 @@ export default function UnitsStatisticsPage() {
                     <th className="px-6 py-4 text-center text-amber-200 font-semibold">
                       ∑ Tổng cộng
                     </th>
-                    <th className="px-6 py-4 text-center text-amber-200 font-semibold">
-                      <TrendingUp className="w-4 h-4 inline" /> Tỷ lệ
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,21 +198,6 @@ export default function UnitsStatisticsPage() {
                           <span className="bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full text-xs font-semibold">
                             {item.total_participants}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-full max-w-[100px] bg-[#1a0004]/50 rounded-full h-2">
-                              <div
-                                className="bg-gradient-to-r from-green-500 to-amber-500 h-2 rounded-full"
-                                style={{
-                                  width: `${percentage}%`,
-                                }}
-                              />
-                            </div>
-                            <span className="text-amber-200 text-xs font-semibold w-10">
-                              {percentage}%
-                            </span>
-                          </div>
                         </td>
                       </tr>
                     );
