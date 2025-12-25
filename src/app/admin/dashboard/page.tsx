@@ -54,6 +54,8 @@ export default function AdminDashboardPage() {
       const totalOrders = orders?.length ?? 0
       const pendingOrders =
         orders?.filter((o: any) => o.payment_status === "pending")?.length ?? 0
+      const cancelledOrders =
+        orders?.filter((o: any) => o.payment_status === "cancelled")?.length ?? 0
 
       const recentOrders: DashboardOrder[] = (orders ?? [])
         .slice(0, 400)
@@ -69,6 +71,7 @@ export default function AdminDashboardPage() {
       setMetrics({
         totalOrders,
         pendingOrders,
+        cancelledOrders,
         recentOrders,
       })
     } catch (error) {
@@ -100,7 +103,7 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <StatCard label="Tổng đơn hàng" value={metrics?.totalOrders ?? 0} />
           <StatCard
             label="Đơn chờ thanh toán"
@@ -108,7 +111,11 @@ export default function AdminDashboardPage() {
           />
           <StatCard
             label="Đơn hoàn thành"
-            value={(metrics?.totalOrders ?? 0) - (metrics?.pendingOrders ?? 0)}
+            value={(metrics?.totalOrders ?? 0) - (metrics?.pendingOrders ?? 0) - (metrics?.cancelledOrders ?? 0)}
+          />
+          <StatCard
+            label="Đơn đã hủy"
+            value={metrics?.cancelledOrders ?? 0}
           />
         </div>
 

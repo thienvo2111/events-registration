@@ -140,6 +140,7 @@ export interface DashboardOrder {
 export interface DashboardMetrics {
   totalOrders: number;
   pendingOrders: number;
+  cancelledOrders: number;
   recentOrders: DashboardOrder[];
 }
 
