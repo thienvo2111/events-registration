@@ -7,8 +7,8 @@ import { CartProvider } from "@/context/CartContext"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Event Registration",
-  description: "Hệ thống đăng ký sự kiện không cần tạo tài khoản",
+  title: "JCI Vietnam New Year Convention 2026",
+  description: "Website đăng ký tham gia sự kiện JCI Vietnam New Year Convention 2026",
 }
 
 export default function RootLayout({
