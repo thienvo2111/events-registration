@@ -1,84 +1,78 @@
-// src/app/layout.tsx
-import type { Metadata } from "next"
-import React from "react"
-import Image from "next/image"
-import "./globals.css"
-import { CartProvider } from "@/context/CartContext"
-import Link from "next/link"
+"use client"
 
-export const metadata: Metadata = {
-  title: "JCI Vietnam New Year Convention 2026",
-  description: "Website đăng ký tham gia sự kiện JCI Vietnam New Year Convention 2026",
+import { useRouter, usePathname } from "next/navigation"
+import Link from "next/link"
+import { PropsWithChildren } from "react"
+import { Button } from "@/components/ui/button"
+import { createSupabaseClient } from "@/utils/supabase/client"
+
+export default function AdminLayout({ children }: PropsWithChildren) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const supabase = createSupabaseClient()
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    router.push("/admin/login")
+  }
+
+  const isActive = (href: string) => pathname === href
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <aside className="w-64 border-r border-slate-200 bg-white">
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
+          <span className="font-semibold text-slate-900">Admin</span>
+        </div>
+        <nav className="p-4 space-y-2 text-sm">
+          <AdminLink href="/admin/dashboard" active={isActive("/admin/dashboard")}>
+            Dashboard
+          </AdminLink>
+          <AdminLink href="/admin/orders" active={isActive("/admin/orders")}>
+            Đơn hàng
+          </AdminLink>
+          <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
+            Quản lý hoạt động
+          </AdminLink>
+          <AdminLink href="/admin/statistics/units" active={isActive("/admin/statistics/units")}>
+            Thống kê theo Chapter
+          </AdminLink>
+        </nav>
+        <div className="p-4 border-t border-slate-200">
+          <Button
+            variant="outline"
+            className="w-full justify-center text-red-600"
+            onClick={handleLogout}
+          >
+            Đăng xuất
+          </Button>
+        </div>
+      </aside>
+      <main className="flex-1 p-8">{children}</main>
+    </div>
+  )
 }
 
-export default function RootLayout({
+function AdminLink({
+  href,
+  active,
   children,
 }: {
+  href: string
+  active: boolean
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi">
-      {/* dùng font sans (Inter / hệ thống), không serif */}
-      <body className="min-h-screen bg-[#3b0008] font-sans text-slate-50">
-        <CartProvider>
-          <div className="flex min-h-screen flex-col">
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </div>
-        </CartProvider>
-      </body>
-    </html>
-  )
-}
-
-function SiteHeader() {
-  return (
-    <header className="sticky top-0 z-30 border-b border-[#8b1c1f]/40 bg-[#3b0008]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/images/logo.png"
-            alt="Logo NYC2026"
-            width={48}
-            height={32}
-            priority
-            className="h-8 w-12"
-          />
-          <span className="text-sm font-semibold tracking-wide md:text-base">
-            2026 JCI VIETNAM NEW YEAR CONVENTION
-          </span>
-        </Link>
-        <nav className="flex items-center gap-3 text-xs md:gap-5 md:text-sm">
-          <Link
-            href="/events"
-            className="rounded-full px-3 py-1 font-medium text-amber-300 hover:bg-amber-300/10"
-          >
-            Đăng ký
-          </Link>
-          <Link
-            href="/search"
-            className="rounded-full px-3 py-1 font-medium text-amber-100/90 hover:bg-amber-100/10"
-          >
-            Tra cứu đơn hàng
-          </Link>
-        </nav>
-      </div>
-    </header>
-  )
-}
-
-function SiteFooter() {
-  return (
-    <footer className="border-t border-[#8b1c1f]/40 bg-[#2a0006]">
-      <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-4 text-xs text-amber-100/80 md:flex-row md:items-center md:justify-between md:px-6">
-        <p>
-          © 2026 JCI Vietnam New Year Convention. All rights reserved.
-        </p>
-        <p className="text-[11px]">
-          Designed for multi-device: desktop, tablet, mobile.
-        </p>
-      </div>
-    </footer>
+    <Link
+      href={href}
+      className={[
+        "block rounded-md px-3 py-2",
+        active
+          ? "bg-slate-100 text-slate-900 font-medium"
+          : "text-slate-600 hover:bg-slate-50",
+      ].join(" ")}
+    >
+      {children}
+    </Link>
   )
 }
