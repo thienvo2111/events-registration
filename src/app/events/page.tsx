@@ -156,12 +156,12 @@ export default function EventsPage() {
               key={activity.id}
               className="flex h-full flex-col overflow-hidden rounded-lg border border-[#8b1c1f]/50 bg-[#2a0006]/90 text-amber-50 shadow-sm"
             >
-              <CardHeader className="border-b border-[#8b1c1f]/40 pb-3">
+              <CardHeader className="border-b border-[#8b1c1f] pb-3">
                 <CardTitle className="text-base font-semibold md:text-lg">
                   {activity.title}
                 </CardTitle>
                 {activity.description && (
-                  <div className="max-h-32 overflow-y-auto rounded-md bg-black/20 p-2 text-xs leading-relaxed text-amber-100/50 md:text-sm scrollbar-thin">
+                  <div className="A">
                     {activity.description}
                   </div>
                 )}

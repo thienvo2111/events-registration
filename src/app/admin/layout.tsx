@@ -28,11 +28,11 @@ export default function AdminLayout({ children }: PropsWithChildren) {
           <AdminLink href="/admin/dashboard" active={isActive("/admin/dashboard")}>
             Dashboard
           </AdminLink>
-          {/* <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
-            Hoạt động
-          </AdminLink> */}
           <AdminLink href="/admin/orders" active={isActive("/admin/orders")}>
             Đơn hàng
+          </AdminLink>
+          <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
+            Quản lý Hoạt động
           </AdminLink>
           <AdminLink href="/admin/statistics/units" active={isActive("/admin/statistics/units")}>
             Thống kê theo Chapter
