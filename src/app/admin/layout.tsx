@@ -32,7 +32,7 @@ export default function AdminLayout({ children }: PropsWithChildren) {
             Đơn hàng
           </AdminLink>
           <AdminLink href="/admin/activities" active={isActive("/admin/activities")}>
-            Quản lý Hoạt động
+            Quản lý hoạt động
           </AdminLink>
           <AdminLink href="/admin/statistics/units" active={isActive("/admin/statistics/units")}>
             Thống kê theo Chapter

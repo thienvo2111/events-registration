@@ -303,7 +303,7 @@ export default function AdminActivitiesPage() {
                     onClick={() => handleDelete(ac)}
                     variant="outline"
                     size="sm"
-                    className="text-red-400 hover:bg-red-900/20 hover:text-red-300"
+                    className="text-red-400 hover:bg-red-900/20 hover:text-red-git add 300"
                   >
                     Xóa
                   </Button>
@@ -378,7 +378,7 @@ export default function AdminActivitiesPage() {
 
                     <div>
                       <label className="block text-sm font-medium mb-1.5 text-amber-100">
-                        Tối đa người tham gia
+                        Số người tham gia tối đa
                       </label>
                       <Input
                         type="number"
@@ -479,3 +479,4 @@ export default function AdminActivitiesPage() {
     </div>
   )
 }
+
